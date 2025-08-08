@@ -12,25 +12,25 @@ export async function GET(request: Request) {
 
     // Verify token
     const decoded = verify(token, process.env.JWT_SECRET!) as { userId: string }
-    const userId = parseInt(decoded.userId)
+    const userId = decoded.userId // Keep as string, don't parseInt
 
     // Get all accepted friendships for the user
     const friendships = await prisma.friendship.findMany({
       where: {
         OR: [
-          { user1Id: userId },
-          { user2Id: userId }
+          { senderId: userId },
+          { receiverId: userId }
         ],
         status: 'ACCEPTED'
       },
       include: {
-        user1: {
+        sender: {
           select: {
             id: true,
             username: true
           }
         },
-        user2: {
+        receiver: {
           select: {
             id: true,
             username: true
@@ -41,7 +41,7 @@ export async function GET(request: Request) {
 
     // Transform the data to get friend information
     const friends = friendships.map(friendship => {
-      const friend = friendship.user1Id === userId ? friendship.user2 : friendship.user1
+      const friend = friendship.senderId === userId ? friendship.receiver : friendship.sender
       return {
         id: friend.id,
         username: friend.username
