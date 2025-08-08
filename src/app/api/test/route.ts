@@ -16,10 +16,13 @@ export async function GET() {
     })
   } catch (error) {
     console.error('Test endpoint error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const errorStack = error instanceof Error ? error.stack : undefined
+    
     return NextResponse.json({
       status: 'error',
-      message: error.message,
-      stack: error.stack
+      message: errorMessage,
+      stack: errorStack
     }, { status: 500 })
   }
 } 
