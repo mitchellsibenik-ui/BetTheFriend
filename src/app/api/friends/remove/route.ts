@@ -10,10 +10,10 @@ export async function POST(request: Request) {
     }
 
     const decoded = verify(token, process.env.JWT_SECRET || 'your-secret-key') as { userId: string }
-    const userId = parseInt(decoded.userId)
+    const userId = decoded.userId // Keep as string, don't parseInt
 
     const { friendId } = await request.json()
-    if (typeof friendId !== 'number') {
+    if (typeof friendId !== 'string') {
       return NextResponse.json({ error: 'Invalid friend ID' }, { status: 400 })
     }
 
@@ -23,15 +23,15 @@ export async function POST(request: Request) {
         OR: [
           {
             AND: [
-              { user1Id: userId },
-              { user2Id: friendId },
+              { senderId: userId },
+              { receiverId: friendId },
               { status: 'ACCEPTED' }
             ]
           },
           {
             AND: [
-              { user1Id: friendId },
-              { user2Id: userId },
+              { senderId: friendId },
+              { receiverId: userId },
               { status: 'ACCEPTED' }
             ]
           }
