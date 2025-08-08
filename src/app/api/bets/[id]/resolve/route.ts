@@ -42,9 +42,13 @@ export async function POST(
     }
 
     // Determine winner based on bet type and game result
-    let winnerId: number | null = null
-    let loserId: number | null = null
+    let winnerId: string | null = null
+    let loserId: string | null = null
     let result: 'win' | 'lose' | 'push' = 'push'
+
+    if (!bet.gameDetails) {
+      return NextResponse.json({ error: 'Game details not found' }, { status: 400 })
+    }
 
     const gameDetails = JSON.parse(bet.gameDetails)
     const { homeTeam, awayTeam } = gameDetails
@@ -68,6 +72,11 @@ export async function POST(
       case 'SPREAD': {
         const homeScore = gameResult.homeScore
         const awayScore = gameResult.awayScore
+        
+        if (!bet.senderValue) {
+          return NextResponse.json({ error: 'Spread value not found' }, { status: 400 })
+        }
+        
         const spread = parseFloat(bet.senderValue)
         
         const homeWithSpread = homeScore + spread
@@ -84,6 +93,11 @@ export async function POST(
       }
       case 'TOTAL': {
         const totalScore = gameResult.homeScore + gameResult.awayScore
+        
+        if (!bet.senderValue) {
+          return NextResponse.json({ error: 'Total value not found' }, { status: 400 })
+        }
+        
         const overUnder = parseFloat(bet.senderValue)
         
         if (totalScore > overUnder) {
