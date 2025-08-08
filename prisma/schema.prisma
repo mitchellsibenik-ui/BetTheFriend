@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  username      String   @unique
+  password      String
+  name          String?
+  image         String?
+  balance       Float    @default(1000)
+  wins          Int      @default(0)
+  losses        Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  sentBets      Bet[]    @relation("SentBets")
+  receivedBets  Bet[]    @relation("ReceivedBets")
+  wonBets       Bet[]    @relation("WonBets")
+  lostBets      Bet[]    @relation("LostBets")
+  sentFriendships     Friendship[] @relation("SentFriendships")
+  receivedFriendships Friendship[] @relation("ReceivedFriendships")
+  notifications Notification[]
+  createdRooms ShowdownRoom[] @relation("CreatedRooms")
+  showdownParticipations ShowdownParticipant[]
+}
+
+model Friendship {
+  id          String   @id @default(cuid())
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  senderId    String
+  receiverId  String
+  sender      User     @relation("SentFriendships", fields: [senderId], references: [id])
+  receiver    User     @relation("ReceivedFriendships", fields: [receiverId], references: [id])
+}
+
+// Comment out Wager and Stats models if not used
+// model Wager {
+//   id          Int       @id @default(autoincrement())
+//   senderId    Int
+//   receiverId  Int
+//   eventId     String
+//   amount      Float
+//   terms       String
+//   status      String    @default("PENDING")
+//   createdAt   DateTime  @default(now())
+//   updatedAt   DateTime  @updatedAt
+//   sender      User      @relation("SentWagers", fields: [senderId], references: [id])
+//   receiver    User      @relation("ReceivedWagers", fields: [receiverId], references: [id])
+// }
+
+model Bet {
+  id          String   @id @default(cuid())
+  gameId      String
+  senderId    String
+  receiverId  String
+  senderTeam  String
+  receiverTeam String
+  betType     String
+  senderValue String?
+  receiverValue String?
+  amount      Int
+  message     String?
+  status      String   @default("PENDING")
+  gameDetails String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  resolved    Boolean  @default(false)
+  resolvedAt  DateTime?
+  winnerId    String?
+  loserId     String?
+  result      String?
+  isLiveBet   Boolean  @default(false)
+
+  sender      User     @relation("SentBets", fields: [senderId], references: [id])
+  receiver    User     @relation("ReceivedBets", fields: [receiverId], references: [id])
+  game        Game     @relation(fields: [gameId], references: [id])
+  winner      User?    @relation("WonBets", fields: [winnerId], references: [id])
+  loser       User?    @relation("LostBets", fields: [loserId], references: [id])
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([gameId])
+}
+
+model Game {
+  id          String   @id @default(cuid())
+  homeTeam    String
+  awayTeam    String
+  startTime   DateTime
+  endTime     DateTime?
+  homeScore   Int?
+  awayScore   Int?
+  status      String   @default("scheduled") // scheduled, in_progress, completed
+  sport       String?
+  league      String?
+  homeSpread  Float?
+  awaySpread  Float?
+  total       Float?
+  bets        Bet[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Comment out Wager and Stats models if not used
+// model Stats {
+//   id            Int     @id @default(autoincrement())
+//   userId        Int     @unique
+//   totalWagered  Float   @default(0)
+//   totalWon      Float   @default(0)
+//   winStreak     Int     @default(0)
+//   longestStreak Int     @default(0)
+//   user          User    @relation(fields: [userId], references: [id])
+// }
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // 'bet' | 'friend_request'
+  message   String
+  data      String?  // JSON string for additional data
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model ShowdownRoom {
+  id          String   @id @default(cuid())
+  name        String
+  creatorId   String
+  creator     User     @relation("CreatedRooms", fields: [creatorId], references: [id])
+  participants ShowdownParticipant[]
+  entryFee    Float
+  status      String   @default("open") // open, in_progress, completed
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ShowdownParticipant {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  roomId    String
+  room      ShowdownRoom @relation(fields: [roomId], references: [id])
+  picks     ShowdownPick[]
+  score     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, roomId])
+}
+
+model ShowdownPick {
+  id            String   @id @default(cuid())
+  participantId String
+  participant   ShowdownParticipant @relation(fields: [participantId], references: [id])
+  gameId        String
+  selectedTeam  String
+  type          String   // moneyline, spread, total
+  isCorrect     Boolean?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([participantId, gameId])
+} 

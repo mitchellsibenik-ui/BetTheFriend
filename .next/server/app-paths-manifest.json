@@ -1,0 +1,7 @@
+{
+  "/my-bets/[id]/page": "app/my-bets/[id]/page.js",
+  "/notifications/page": "app/notifications/page.js",
+  "/auth/login/page": "app/auth/login/page.js",
+  "/my-bets/page": "app/my-bets/page.js",
+  "/sportsbook/page": "app/sportsbook/page.js"
+}

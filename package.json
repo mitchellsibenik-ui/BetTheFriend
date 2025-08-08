@@ -1,0 +1,56 @@
+{
+  "name": "bet-the-friend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "seed": "npx ts-node prisma/seed.ts",
+    "db:generate": "npx prisma generate",
+    "db:migrate": "npx prisma migrate deploy",
+    "db:reset": "npx prisma migrate reset --force",
+    "postinstall": "prisma generate",
+    "vercel-build": "prisma generate && prisma migrate deploy && next build"
+  },
+  "dependencies": {
+    "@auth/prisma-adapter": "^2.9.1",
+    "@headlessui/react": "^2.2.4",
+    "@prisma/client": "^5.22.0",
+    "@tanstack/react-query": "^5.20.5",
+    "@types/node-cron": "^3.0.11",
+    "autoprefixer": "^10.4.17",
+    "axios": "^1.6.7",
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.513.0",
+    "next": "14.1.0",
+    "next-auth": "^4.24.11",
+    "node-cron": "^4.2.1",
+    "postcss": "^8.4.35",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hot-toast": "^2.5.2",
+    "socket.io-client": "^4.7.4",
+    "tailwindcss": "^3.4.1",
+    "use-debounce": "^10.0.5",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/node": "^20.19.0",
+    "@types/react": "^18.2.55",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "14.1.0",
+    "prisma": "^5.10.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  }
+}
