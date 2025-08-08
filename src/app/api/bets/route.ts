@@ -17,7 +17,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Status parameter is required' }, { status: 400 })
     }
 
-    const userId = parseInt(session.user.id)
+    const userId = session.user.id // Keep as string, don't parseInt
 
     // Fetch bets based on status
     let bets
