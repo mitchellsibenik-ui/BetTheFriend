@@ -13,11 +13,5 @@
       "path": "/api/cron/settle-bets",
       "schedule": "0 0 * * *"
     }
-  ],
-  "env": {
-    "DATABASE_URL": "@database_url",
-    "NEXTAUTH_SECRET": "@nextauth_secret",
-    "NEXTAUTH_URL": "@nextauth_url",
-    "NEXT_PUBLIC_ODDS_API_KEY": "@odds_api_key"
-  }
+  ]
 } 
