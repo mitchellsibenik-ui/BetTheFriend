@@ -27,6 +27,12 @@ export async function POST() {
     // Process each active bet
     for (const bet of activeBets) {
       try {
+        // Check if gameDetails exists
+        if (!bet.gameDetails) {
+          console.log(`Skipping bet ${bet.id} - no game details`)
+          continue
+        }
+        
         const gameDetails = JSON.parse(bet.gameDetails)
         const gameId = gameDetails.gameId
 
