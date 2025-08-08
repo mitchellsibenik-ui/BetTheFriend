@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { manualSettlement } from '@/lib/cron'
+import { settleCompletedBets } from '@/lib/cron'
 
 export async function POST() {
   try {
@@ -11,7 +11,7 @@ export async function POST() {
     }
 
     console.log('Manual bet settlement triggered by:', session.user.username)
-    await manualSettlement()
+    await settleCompletedBets()
     
     return NextResponse.json({ 
       success: true, 
