@@ -1,6 +1,8 @@
-# 🎯 BetTheFriend - Social Sports Betting Platform
+# BetTheFriend 🎯
 
-A peer-to-peer sports betting application where friends can bet against each other on real sports games with live odds and automated settlement.
+<!-- Trigger deployment with import fixes -->
+
+A peer-to-peer sports betting platform where friends can bet against each other on real games with automated settlement based on actual game results.
 
 ## ✨ Features
 
