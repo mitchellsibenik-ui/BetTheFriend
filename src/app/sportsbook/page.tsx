@@ -585,22 +585,22 @@ export default function SportsbookPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
+    <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 space-y-4 sm:space-y-0">
         <div className="flex items-center space-x-3">
-          <h1 className="text-3xl font-bold">Sportsbook</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Sportsbook</h1>
           {refreshing && (
             <div className="flex items-center text-blue-400">
               <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-400 border-t-transparent mr-2"></div>
-              <span className="text-sm">Updating...</span>
+              <span className="text-xs sm:text-sm">Updating...</span>
             </div>
           )}
         </div>
-        <div className="flex space-x-4">
+        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
           <select
             value={selectedSport}
             onChange={(e) => setSelectedSport(e.target.value)}
-            className="bg-gray-800 text-white px-4 py-2 rounded-lg border border-gray-700 focus:outline-none focus:border-blue-500"
+            className="bg-gray-800 text-white px-3 sm:px-4 py-2 rounded-lg border border-gray-700 focus:outline-none focus:border-blue-500 text-sm sm:text-base w-full sm:w-auto"
           >
             <option value="All">All Sports</option>
             <option value="NFL">NFL</option>
@@ -608,40 +608,42 @@ export default function SportsbookPage() {
             <option value="MLB">MLB</option>
             <option value="NHL">NHL</option>
           </select>
-          <button
-            onClick={handleRefresh}
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
-          >
-            Refresh
-          </button>
-          <Tab.Group>
-            <Tab.List className="flex space-x-2 bg-gray-800 p-1 rounded-lg">
-              <Tab
-                className={({ selected }) =>
-                  `px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    selected
-                      ? 'bg-blue-500 text-white'
-                      : 'text-gray-400 hover:text-white'
-                  }`
-                }
-                onClick={() => setActiveTab('upcoming')}
-              >
-                Upcoming
-              </Tab>
-              <Tab
-                className={({ selected }) =>
-                  `px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    selected
-                      ? 'bg-blue-500 text-white'
-                      : 'text-gray-400 hover:text-white'
-                  }`
-                }
-                onClick={() => setActiveTab('live')}
-              >
-                Live
-              </Tab>
-            </Tab.List>
-          </Tab.Group>
+          <div className="flex space-x-2">
+            <button
+              onClick={handleRefresh}
+              className="bg-blue-500 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm sm:text-base flex-1 sm:flex-initial"
+            >
+              Refresh
+            </button>
+            <Tab.Group>
+              <Tab.List className="flex space-x-1 sm:space-x-2 bg-gray-800 p-1 rounded-lg">
+                <Tab
+                  className={({ selected }) =>
+                    `px-2 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                      selected
+                        ? 'bg-blue-500 text-white'
+                        : 'text-gray-400 hover:text-white'
+                    }`
+                  }
+                  onClick={() => setActiveTab('upcoming')}
+                >
+                  Upcoming
+                </Tab>
+                <Tab
+                  className={({ selected }) =>
+                    `px-2 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                      selected
+                        ? 'bg-blue-500 text-white'
+                        : 'text-gray-400 hover:text-white'
+                    }`
+                  }
+                  onClick={() => setActiveTab('live')}
+                >
+                  Live
+                </Tab>
+              </Tab.List>
+            </Tab.Group>
+          </div>
         </div>
       </div>
       
@@ -701,40 +703,40 @@ export default function SportsbookPage() {
             return (
               <div 
                 key={game.id} 
-                className={`bg-gray-800 rounded-lg shadow-lg p-6 border ${
+                className={`bg-gray-800 rounded-lg shadow-lg p-3 sm:p-6 border ${
                   game.status === 'live' ? 'border-red-500' : 'border-gray-700'
                 } hover:border-blue-500 transition-all duration-200`}
               >
-                <div className="mb-4">
-                  <div className="text-gray-400 text-sm mb-2">
+                <div className="mb-3 sm:mb-4">
+                  <div className="text-gray-400 text-xs sm:text-sm mb-2">
                     {game.status === 'live' ? (
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
-                          <span className="text-red-500 font-medium animate-pulse">LIVE</span>
+                          <span className="text-red-500 font-medium animate-pulse text-xs sm:text-sm">LIVE</span>
                           {game.scores && (
-                            <span className="text-white font-bold">
+                            <span className="text-white font-bold text-sm sm:text-base">
                               {game.scores.away} - {game.scores.home}
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-1 sm:space-x-2">
                           {game.period && (
-                            <span className="text-white">
+                            <span className="text-white text-xs sm:text-sm">
                               {game.sport_key.includes('baseball') ? (
-                                <span>Inning {game.period}</span>
+                                <span>Inn {game.period}</span>
                               ) : game.sport_key.includes('basketball') ? (
                                 <span>Q{game.period}</span>
                               ) : game.sport_key.includes('hockey') ? (
-                                <span>Period {game.period}</span>
+                                <span>P{game.period}</span>
                               ) : game.sport_key.includes('football') ? (
                                 <span>Q{game.period}</span>
                               ) : (
-                                <span>Period {game.period}</span>
+                                <span>P{game.period}</span>
                               )}
                             </span>
                           )}
                           {game.clock && !game.sport_key.includes('baseball') && (
-                            <span className="text-white font-mono">{game.clock}</span>
+                            <span className="text-white font-mono text-xs sm:text-sm">{game.clock}</span>
                           )}
                         </div>
                       </div>
@@ -751,24 +753,24 @@ export default function SportsbookPage() {
                   </div>
                   <div className="flex justify-between items-center">
                     <div className="flex-1 text-right">
-                      <div className="text-white font-bold text-base truncate max-w-[120px] ml-auto">{formatTeamName(game.away_team)}</div>
+                      <div className="text-white font-bold text-sm sm:text-base truncate max-w-[100px] sm:max-w-[120px] ml-auto">{formatTeamName(game.away_team)}</div>
                       <div className="text-gray-400 text-xs">Away</div>
                       {game.scores && (
-                        <div className="text-xl font-bold text-white mt-1">{game.scores.away}</div>
+                        <div className="text-lg sm:text-xl font-bold text-white mt-1">{game.scores.away}</div>
                       )}
                     </div>
-                    <div className="mx-4 text-gray-400">@</div>
+                    <div className="mx-2 sm:mx-4 text-gray-400">@</div>
                     <div className="flex-1 text-left">
-                      <div className="text-white font-bold text-base truncate max-w-[120px]">{formatTeamName(game.home_team)}</div>
+                      <div className="text-white font-bold text-sm sm:text-base truncate max-w-[100px] sm:max-w-[120px]">{formatTeamName(game.home_team)}</div>
                       <div className="text-gray-400 text-xs">Home</div>
                       {game.scores && (
-                        <div className="text-xl font-bold text-white mt-1">{game.scores.home}</div>
+                        <div className="text-lg sm:text-xl font-bold text-white mt-1">{game.scores.home}</div>
                       )}
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {h2hMarket && (
                     <div>
                       <h3 className="font-medium mb-2 text-gray-300">Money Line</h3>
@@ -790,10 +792,10 @@ export default function SportsbookPage() {
                               )}
                               className={`flex-1 mx-1 ${
                                 game.status === 'live' ? 'bg-gray-800' : 'bg-gray-700'
-                              } hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-all duration-200 flex flex-col items-center`}
+                              } hover:bg-blue-600 text-white py-2 px-2 sm:px-4 rounded-lg transition-all duration-200 flex flex-col items-center`}
                             >
-                              <div className="font-medium truncate">{formatTeamName(o.name)}</div>
-                              <div className={`${game.status === 'live' ? 'text-yellow-400' : 'text-green-400'}`}>
+                              <div className="font-medium truncate text-xs sm:text-sm">{formatTeamName(o.name)}</div>
+                              <div className={`text-xs sm:text-sm ${game.status === 'live' ? 'text-yellow-400' : 'text-green-400'}`}>
                                 {o.price > 0 ? `+${o.price}` : o.price}
                               </div>
                             </button>
@@ -824,10 +826,10 @@ export default function SportsbookPage() {
                               )}
                               className={`flex-1 mx-1 ${
                                 game.status === 'live' ? 'bg-gray-800' : 'bg-gray-700'
-                              } hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-all duration-200 flex flex-col items-center`}
+                              } hover:bg-blue-600 text-white py-2 px-2 sm:px-4 rounded-lg transition-all duration-200 flex flex-col items-center`}
                             >
-                              <div className="font-medium truncate">{formatTeamName(o.name)}</div>
-                              <div className={`${game.status === 'live' ? 'text-yellow-400' : 'text-green-400'}`}>
+                              <div className="font-medium truncate text-xs sm:text-sm">{formatTeamName(o.name)}</div>
+                              <div className={`text-xs sm:text-sm ${game.status === 'live' ? 'text-yellow-400' : 'text-green-400'}`}>
                                 {o.point ? `${o.point > 0 ? '+' : ''}${o.point} (${o.price > 0 ? '+' : ''}${o.price})` : o.price}
                               </div>
                             </button>
@@ -852,10 +854,10 @@ export default function SportsbookPage() {
                             )}
                             className={`flex-1 mx-1 ${
                               game.status === 'live' ? 'bg-gray-800' : 'bg-gray-700'
-                            } hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-all duration-200 flex flex-col items-center`}
+                            } hover:bg-blue-600 text-white py-2 px-2 sm:px-4 rounded-lg transition-all duration-200 flex flex-col items-center`}
                           >
-                            <div className="font-medium truncate">{o.name}</div>
-                            <div className={`${game.status === 'live' ? 'text-yellow-400' : 'text-green-400'}`}>
+                            <div className="font-medium truncate text-xs sm:text-sm">{o.name}</div>
+                            <div className={`text-xs sm:text-sm ${game.status === 'live' ? 'text-yellow-400' : 'text-green-400'}`}>
                               {o.point ? `${o.name} ${o.point} (${o.price > 0 ? '+' : ''}${o.price})` : o.price}
                             </div>
                           </button>

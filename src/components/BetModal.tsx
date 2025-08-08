@@ -287,12 +287,12 @@ export default function BetModal({ isOpen, onClose, bet, onBetPlaced, isLiveBet 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-      <div className="bg-gray-900 rounded-xl p-4 max-w-sm w-full shadow-2xl">
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-2 sm:p-4 z-50">
+      <div className="bg-gray-900 rounded-xl p-3 sm:p-4 max-w-sm w-full max-h-[95vh] overflow-y-auto shadow-2xl">
         {/* Header */}
-        <div className="flex justify-between items-start mb-4">
+        <div className="flex justify-between items-start mb-3 sm:mb-4">
           <div>
-            <h2 className="text-xl font-bold text-white">Place a Bet</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-white">Place a Bet</h2>
             <p className="text-gray-400 text-xs">
               {new Date(bet.commence_time).toLocaleString('en-US', {
                 timeZone: 'America/New_York',
@@ -300,16 +300,15 @@ export default function BetModal({ isOpen, onClose, bet, onBetPlaced, isLiveBet 
                 month: 'short',
                 day: 'numeric',
                 hour: 'numeric',
-                minute: 'numeric',
-                timeZoneName: 'short'
+                minute: '2-digit'
               })}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="text-gray-400 hover:text-white transition-colors p-1"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
