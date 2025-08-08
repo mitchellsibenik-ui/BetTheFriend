@@ -1,8 +1,8 @@
-# BetTheFriend 🎯
+# Bet The Friend
 
-<!-- Trigger deployment with import fixes -->
+A social sports betting application built with Next.js, allowing friends to place bets against each other on real sports games.
 
-A peer-to-peer sports betting platform where friends can bet against each other on real games with automated settlement based on actual game results.
+<!-- Force Vercel deployment with complete components - v2.1 -->
 
 ## ✨ Features
 
