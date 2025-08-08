@@ -66,7 +66,7 @@ export default function RegisterPage() {
         return
       }
 
-      router.push('/social')
+      router.push('/sportsbook')
       router.refresh()
     } catch (err) {
       console.error('Registration error:', err)
