@@ -49,8 +49,8 @@ export async function POST() {
         }
 
         // Determine winner based on bet type
-        let winnerId: number | null = null
-        let loserId: number | null = null
+        let winnerId: string | null = null
+        let loserId: string | null = null
         let result: 'win' | 'lose' | 'push' = 'push'
 
         switch (bet.betType) {
@@ -72,6 +72,12 @@ export async function POST() {
           case 'SPREAD': {
             const homeScore = gameResult.homeScore
             const awayScore = gameResult.awayScore
+            
+            if (!bet.senderValue) {
+              console.log(`Skipping bet ${bet.id} - no spread value`)
+              continue
+            }
+            
             const spread = parseFloat(bet.senderValue)
             
             const homeWithSpread = homeScore + spread
@@ -88,6 +94,12 @@ export async function POST() {
           }
           case 'TOTAL': {
             const totalScore = gameResult.homeScore + gameResult.awayScore
+            
+            if (!bet.senderValue) {
+              console.log(`Skipping bet ${bet.id} - no total value`)
+              continue
+            }
+            
             const overUnder = parseFloat(bet.senderValue)
             
             if (totalScore > overUnder) {
