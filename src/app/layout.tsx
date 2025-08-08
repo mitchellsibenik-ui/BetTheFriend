@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { AuthProvider } from '@/components/AuthProvider'
 import { Toaster } from 'react-hot-toast'
+import Navigation from '@/components/Navigation'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -23,7 +24,10 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <AuthProvider>
-          {children}
+          <Navigation />
+          <main className="min-h-screen bg-gray-900">
+            {children}
+          </main>
           <Toaster position="top-right" />
         </AuthProvider>
       </body>
