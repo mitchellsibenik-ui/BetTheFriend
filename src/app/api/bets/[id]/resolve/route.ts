@@ -13,7 +13,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const betId = parseInt(params.id)
+    const betId = params.id // Keep as string, don't parseInt
     const { gameResult } = await req.json()
 
     if (!gameResult) {
