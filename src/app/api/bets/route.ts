@@ -20,7 +20,7 @@ export async function GET(req: Request) {
     const userId = session.user.id // Keep as string, don't parseInt
 
     // Fetch bets based on status
-    let bets
+    let bets: any[] = [] // Initialize as empty array with proper type
     if (status === 'pending') {
       // Get bets where user is the sender and status is PENDING
       bets = await prisma.bet.findMany({
@@ -118,24 +118,35 @@ export async function GET(req: Request) {
     }
 
     // Transform the bets to match the frontend interface
-    const transformedBets = bets.map(bet => ({
-      id: bet.id.toString(),
-      type: 'single',
-      status: bet.status.toLowerCase(),
-      amount: bet.amount,
-      potentialWin: bet.amount * 2, // Assuming even odds for now
-      createdAt: bet.createdAt.toISOString(),
-      game: {
-        teams: [JSON.parse(bet.gameDetails).homeTeam, JSON.parse(bet.gameDetails).awayTeam],
-        time: new Date(JSON.parse(bet.gameDetails).startTime).toLocaleString(),
-        betType: bet.betType,
-        value: bet.senderValue
-      },
-      opponent: {
-        id: bet.senderId === userId ? bet.receiver.id : bet.sender.id,
-        username: bet.senderId === userId ? bet.receiver.username : bet.sender.username
+    const transformedBets = bets.map(bet => {
+      // Safely parse gameDetails
+      let gameDetails
+      try {
+        gameDetails = bet.gameDetails ? JSON.parse(bet.gameDetails) : { homeTeam: 'Unknown', awayTeam: 'Unknown', startTime: new Date() }
+      } catch (error) {
+        console.error('Error parsing gameDetails:', error)
+        gameDetails = { homeTeam: 'Unknown', awayTeam: 'Unknown', startTime: new Date() }
       }
-    }))
+      
+      return {
+        id: bet.id.toString(),
+        type: 'single',
+        status: bet.status.toLowerCase(),
+        amount: bet.amount,
+        potentialWin: bet.amount * 2, // Assuming even odds for now
+        createdAt: bet.createdAt.toISOString(),
+        game: {
+          teams: [gameDetails.homeTeam, gameDetails.awayTeam],
+          time: new Date(gameDetails.startTime).toLocaleString(),
+          betType: bet.betType,
+          value: bet.senderValue
+        },
+        opponent: {
+          id: bet.senderId === userId ? bet.receiver?.id : bet.sender?.id,
+          username: bet.senderId === userId ? bet.receiver?.username : bet.sender?.username
+        }
+      }
+    })
 
     return NextResponse.json({ bets: transformedBets })
   } catch (error) {
