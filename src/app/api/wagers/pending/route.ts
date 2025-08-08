@@ -9,9 +9,9 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    let userId: number
+    let userId: string
     try {
-      const decoded = verify(token, process.env.JWT_SECRET!) as { userId: number }
+      const decoded = verify(token, process.env.JWT_SECRET!) as { userId: string }
       userId = decoded.userId
     } catch {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
@@ -19,7 +19,7 @@ export async function GET(req: Request) {
 
     // Fetch both sent and received pending wagers
     const [sentWagers, receivedWagers] = await Promise.all([
-      prisma.wager.findMany({
+      prisma.bet.findMany({
         where: {
           senderId: userId,
           status: 'PENDING'
@@ -36,7 +36,7 @@ export async function GET(req: Request) {
           createdAt: 'desc'
         }
       }),
-      prisma.wager.findMany({
+      prisma.bet.findMany({
         where: {
           receiverId: userId,
           status: 'PENDING'
