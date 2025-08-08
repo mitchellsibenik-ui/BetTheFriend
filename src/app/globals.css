@@ -2,6 +2,40 @@
 @tailwind components;
 @tailwind utilities;
 
+/* iPhone and Mobile Optimizations */
+@layer base {
+  html {
+    /* Prevent horizontal scrolling on mobile */
+    overflow-x: hidden;
+    /* Ensure proper scaling on iPhone */
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+  }
+  
+  body {
+    /* Prevent horizontal scrolling */
+    overflow-x: hidden;
+    /* Prevent zoom on input focus (iPhone) */
+    -webkit-text-size-adjust: 100%;
+    /* Better font rendering on iPhone */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Prevent zoom on input focus for iPhone */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+  
+  /* iPhone safe area handling */
+  @supports (padding: max(0px)) {
+    body {
+      padding-left: max(0px, env(safe-area-inset-left));
+      padding-right: max(0px, env(safe-area-inset-right));
+    }
+  }
+}
+
 @layer utilities {
   .bg-size-200 {
     background-size: 200% 200%;
