@@ -8,6 +8,11 @@ const nextConfig = {
     // Disable ESLint errors during build
     ignoreDuringBuilds: true,
   },
+  // Force dynamic rendering for all pages
+  output: 'standalone',
+  experimental: {
+    serverComponentsExternalPackages: ['prisma']
+  }
 }
 
 module.exports = nextConfig 

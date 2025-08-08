@@ -1,15 +1,17 @@
+import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
-import './globals.css'
-import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from '@/components/AuthProvider'
-import Navigation from '@/components/Navigation'
+import { Toaster } from 'react-hot-toast'
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Bet The Friend',
-  description: 'Bet with your friends on sports games',
+  description: 'Social sports betting with friends',
 }
 
 export default function RootLayout({
@@ -21,11 +23,8 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <AuthProvider>
-          <Navigation />
-          <main className="min-h-screen bg-gray-900">
-            {children}
-          </main>
-          <Toaster />
+          {children}
+          <Toaster position="top-right" />
         </AuthProvider>
       </body>
     </html>
