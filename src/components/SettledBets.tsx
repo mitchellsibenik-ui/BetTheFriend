@@ -118,7 +118,7 @@ export default function SettledBets() {
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h3 className="text-lg font-semibold text-white">
-                  {gameDetails.homeTeam} vs {gameDetails.awayTeam}
+                  {gameDetails.away_team} @ {gameDetails.home_team}
                 </h3>
                 <p className="text-sm text-gray-400">
                   Settled on {new Date(bet.resolvedAt).toLocaleString()}
