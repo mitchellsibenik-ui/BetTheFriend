@@ -149,7 +149,7 @@ export default function ActiveBets() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-4">
       {activeBets.map((bet) => {
         const gameDetails = JSON.parse(bet.gameDetails)
         const isReceiver = bet.receiverId === session?.user?.id
@@ -157,38 +157,40 @@ export default function ActiveBets() {
         const theirOdds = isReceiver ? bet.senderValue : bet.receiverValue
         const yourPayout = calculatePayout(bet.amount, yourOdds, bet.betType)
         const theirPayout = calculatePayout(bet.amount, theirOdds, bet.betType)
-        const isLive = gameDetails.status === 'in_progress'
+        const isLive = gameDetails.status === 'live'
 
         return (
-          <div key={bet.id} className="bg-gray-800 rounded-lg overflow-hidden shadow-lg">
-            {/* Game Header */}
-            <div className="bg-gray-900 p-4 border-b border-gray-700">
-              <div className="flex justify-between items-center">
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h3 className="text-xl font-bold text-white">
-                      {gameDetails.homeTeam} {gameDetails.awayTeam}
+          <div key={bet.id} className={`bg-gray-800 rounded-lg shadow-lg border ${
+            isLive ? 'border-red-500' : 'border-gray-700'
+          } hover:border-blue-500 transition-all duration-200`}>
+            {/* Header */}
+            <div className="p-3 sm:p-4 border-b border-gray-700">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <h3 className="text-lg sm:text-xl font-bold text-white">
+                      {gameDetails.away_team} @ {gameDetails.home_team}
                     </h3>
                     {isLive && (
                       <span className="flex items-center">
                         <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse mr-2"></span>
-                        <span className="text-red-500 font-medium">LIVE</span>
+                        <span className="text-red-500 font-medium text-sm">LIVE</span>
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-400">
+                  <p className="text-xs sm:text-sm text-gray-400 mb-1">
                     {new Date(gameDetails.commence_time).toLocaleString()}
                   </p>
-                  <p className="text-lg font-semibold text-white mt-1">
+                  <p className="text-sm sm:text-lg font-semibold text-white">
                     Against: {isReceiver ? bet.sender.username : bet.receiver.username}
                   </p>
                   {isLive && gameDetails.scores && (
-                    <p className="text-lg font-bold text-white mt-1">
+                    <p className="text-base sm:text-lg font-bold text-white mt-1">
                       {gameDetails.scores.away} - {gameDetails.scores.home}
                     </p>
                   )}
                 </div>
-                <div className="text-right">
+                <div className="text-right mt-2 sm:mt-0">
                   <p className="text-xs text-gray-500">
                     Accepted: {new Date(bet.createdAt).toLocaleString()}
                   </p>
@@ -197,79 +199,72 @@ export default function ActiveBets() {
             </div>
 
             {/* Bet Details */}
-            <div className="p-4">
-              <div className="grid grid-cols-2 gap-6">
+            <div className="p-3 sm:p-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 {/* Your Pick */}
-                <div className="bg-gray-700 rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-3">
-                    <h4 className="text-lg font-semibold text-white">Your Pick</h4>
-                    <span className="px-3 py-1 bg-blue-600 rounded-full text-sm font-medium text-white">
+                <div className="bg-gray-700 rounded-lg p-3 sm:p-4">
+                  <div className="flex justify-between items-center mb-2 sm:mb-3">
+                    <h4 className="text-base sm:text-lg font-semibold text-white">Your Pick</h4>
+                    <span className="px-2 sm:px-3 py-1 bg-blue-600 rounded-full text-xs sm:text-sm font-medium text-white">
                       {formatBetType(bet.betType)}
                     </span>
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-2 sm:space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Team</span>
-                      <span className="text-white font-medium">
+                      <span className="text-gray-400 text-sm">Team</span>
+                      <span className="text-white font-medium text-sm">
                         {isReceiver ? bet.receiverTeam : bet.senderTeam}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Odds</span>
-                      <span className="text-lg font-bold text-green-400">
+                      <span className="text-gray-400 text-sm">Odds</span>
+                      <span className="text-base sm:text-lg font-bold text-green-400">
                         {formatOdds(yourOdds, bet.betType)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Risk</span>
+                      <span className="text-gray-400 text-sm">Risk</span>
                       <span className="text-white font-medium">${bet.amount}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400">To Win</span>
-                      <span className="text-lg font-bold text-green-400">${yourPayout}</span>
+                      <span className="text-gray-400 text-sm">To Win</span>
+                      <span className="text-base sm:text-lg font-bold text-green-400">${yourPayout}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Their Pick */}
-                <div className="bg-gray-700 rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-3">
-                    <h4 className="text-lg font-semibold text-white">Their Pick</h4>
-                    <span className="px-3 py-1 bg-purple-600 rounded-full text-sm font-medium text-white">
+                <div className="bg-gray-700 rounded-lg p-3 sm:p-4">
+                  <div className="flex justify-between items-center mb-2 sm:mb-3">
+                    <h4 className="text-base sm:text-lg font-semibold text-white">Their Pick</h4>
+                    <span className="px-2 sm:px-3 py-1 bg-red-600 rounded-full text-xs sm:text-sm font-medium text-white">
                       {formatBetType(bet.betType)}
                     </span>
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-2 sm:space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Team</span>
-                      <span className="text-white font-medium">
+                      <span className="text-gray-400 text-sm">Team</span>
+                      <span className="text-white font-medium text-sm">
                         {isReceiver ? bet.senderTeam : bet.receiverTeam}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Odds</span>
-                      <span className="text-lg font-bold text-purple-400">
+                      <span className="text-gray-400 text-sm">Odds</span>
+                      <span className="text-base sm:text-lg font-bold text-blue-400">
                         {formatOdds(theirOdds, bet.betType)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Risk</span>
+                      <span className="text-gray-400 text-sm">Risk</span>
                       <span className="text-white font-medium">${bet.amount}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400">To Win</span>
-                      <span className="text-lg font-bold text-purple-400">${theirPayout}</span>
+                      <span className="text-gray-400 text-sm">To Win</span>
+                      <span className="text-base sm:text-lg font-bold text-blue-400">${theirPayout}</span>
                     </div>
                   </div>
                 </div>
               </div>
-
-              {bet.trashTalk && (
-                <div className="mt-4 bg-gray-700 rounded-lg p-4">
-                  <p className="text-sm text-gray-400 mb-1">Trash Talk</p>
-                  <p className="text-white italic">"{bet.trashTalk}"</p>
-                </div>
-              )}
             </div>
           </div>
         )

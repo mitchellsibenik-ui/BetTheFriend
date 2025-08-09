@@ -317,50 +317,37 @@ export default function SocialPage() {
             {friends.map((friend, index) => (
               <div key={friend.id} className="grid grid-cols-12 gap-4 p-4 hover:bg-gray-750 transition-colors">
                 <div className="col-span-1 text-gray-400">{index + 1}</div>
-                <div className="col-span-3">
+                <div className="col-span-4 flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <div className="flex items-center space-x-2">
-                      <div className="relative">
-                        <div className={`w-2 h-2 rounded-full ${
-                          friend.status === 'online' ? 'bg-green-500' : 'bg-gray-500'
-                        }`} />
-                        <div className={`absolute -inset-1 rounded-full ${
-                          friend.status === 'online' ? 'bg-green-500/20 animate-ping' : ''
-                        }`} />
-                      </div>
-                      <span className={`font-medium ${
-                        index === 0 ? 'text-yellow-400' : 
-                        index === 1 ? 'text-gray-300' : 
-                        index === 2 ? 'text-amber-600' : 
-                        'text-blue-400'
-                      }`}>
-                        {friend.username}
-                      </span>
+                    <div className="text-white font-medium truncate max-w-[120px] sm:max-w-[150px]">
+                      {friend.username}
                     </div>
+                  </div>
+                  <div className="flex items-center space-x-2 ml-2">
                     <button
                       onClick={() => {
                         setSelectedFriend(friend.id)
                         setShowCreateWager(true)
                       }}
-                      className="text-gray-400 hover:text-green-500 transition-colors"
+                      className="text-gray-400 hover:text-green-500 transition-colors p-1"
                       title="Create wager"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                       </svg>
                     </button>
                     <button
                       onClick={() => handleRemoveFriend(friend.id, friend.username)}
-                      className="text-gray-400 hover:text-red-500 transition-colors"
+                      className="text-gray-400 hover:text-red-500 transition-colors p-1"
                       title="Remove friend"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                       </svg>
                     </button>
                   </div>
                 </div>
-                <div className="col-span-2 text-right text-white">
+                <div className="col-span-1 text-right text-white">
                   {friend.stats.wins}-{friend.stats.losses}
                 </div>
                 <div className="col-span-2 text-right text-white">

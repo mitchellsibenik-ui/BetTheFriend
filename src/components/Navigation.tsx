@@ -231,13 +231,6 @@ export default function Navigation() {
                   <span className="text-gray-300 mr-2">{session?.user?.username}</span>
                   <span className="text-green-400 font-semibold mr-4">${userBalance?.toFixed(2) || '0.00'}</span>
                   <button
-                    onClick={forceRefreshNotifications}
-                    className="px-2 py-1 rounded-md text-xs font-medium text-gray-400 hover:bg-gray-700 hover:text-white mr-2"
-                    title="Refresh Notifications"
-                  >
-                    🔄
-                  </button>
-                  <button
                     onClick={handleLogout}
                     className="px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
                   >

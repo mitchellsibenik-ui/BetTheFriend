@@ -123,18 +123,15 @@ export default function BetDetailsPage() {
 
   const formatOdds = (value: string, betType: string) => {
     if (betType === 'moneyline') {
-      const odds = parseInt(value)
-      return odds > 0 ? `+${odds}` : odds.toString()
+      const odds = parseFloat(value)
+      return odds > 0 ? `+${odds}` : `${odds}`
     } else if (betType === 'spread') {
-      // Parse the new format: "line|odds" or just "line" for backward compatibility
       const parts = value.split('|')
       const spread = parts[0]
       const odds = parts[1] ? parseInt(parts[1]) : -110
-      // Add + sign for positive spreads
       const displaySpread = parseFloat(spread) > 0 ? `+${spread}` : spread
       return `${displaySpread} (${odds > 0 ? '+' : ''}${odds})`
     } else if (betType === 'overUnder') {
-      // Parse the new format: "line|odds" or just "line" for backward compatibility
       const parts = value.split('|')
       const line = parts[0]
       const odds = parts[1] ? parseInt(parts[1]) : -110

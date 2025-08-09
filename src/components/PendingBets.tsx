@@ -224,7 +224,7 @@ export default function PendingBets() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {pendingBets.map((bet) => {
         const details = formatBetDetails(bet)
         const isReceiver = bet.receiverId === session?.user?.id
@@ -234,85 +234,89 @@ export default function PendingBets() {
         const theirPayout = calculatePayout(bet.amount, theirOdds, bet.betType)
 
         return (
-          <div key={bet.id} className="bg-gray-800 rounded-lg p-4">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="text-lg font-semibold text-white">
+          <div key={bet.id} className="bg-gray-800 rounded-lg p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-3 sm:mb-4">
+              <div className="flex-1">
+                <h3 className="text-base sm:text-lg font-semibold text-white mb-1">
                   {details.game}
                 </h3>
-                <p className="text-sm text-gray-400">
+                <p className="text-xs sm:text-sm text-gray-400 mb-1">
                   Game: {details.time}
                 </p>
-                <p className="text-sm text-gray-400">
+                <p className="text-xs sm:text-sm text-gray-400">
                   Bet Placed: {details.betTime}
                 </p>
               </div>
-              <div className="text-right min-w-0">
+              <div className="text-right mt-2 sm:mt-0 sm:ml-4">
                 <p className="text-white font-medium">{details.amount}</p>
-                <p className="text-sm text-gray-400 whitespace-nowrap">
+                <p className="text-xs sm:text-sm text-gray-400 whitespace-nowrap">
                   {isReceiver ? 'From' : 'To'}: {isReceiver ? bet.sender.username : bet.receiver.username}
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="bg-gray-700 rounded p-3">
-                <p className="text-sm text-gray-400 mb-1">Your Pick</p>
-                <p className="text-white font-medium">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4">
+              <div className="bg-gray-700 rounded p-2 sm:p-3">
+                <p className="text-xs sm:text-sm text-gray-400 mb-1">Your Pick</p>
+                <p className="text-white font-medium text-sm sm:text-base">
                   {isReceiver ? bet.receiverTeam : bet.senderTeam}
                 </p>
-                <div className="mt-2 space-y-1">
-                  <p className="text-sm text-gray-400">
-                    {formatBetType(bet.betType)}
-                  </p>
-                  <p className="text-lg font-bold text-green-400">
-                    {formatOdds(yourOdds, bet.betType)}
-                  </p>
-                  <p className="text-sm text-gray-400">
-                    Potential Payout: ${yourPayout}
-                  </p>
+                <p className="text-xs sm:text-sm text-gray-400">
+                  {formatOdds(yourOdds, bet.betType)}
+                </p>
+                <div className="mt-2 pt-2 border-t border-gray-600">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-400">Risk:</span>
+                    <span className="text-white">${bet.amount}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-400">To Win:</span>
+                    <span className="text-green-400 font-bold">${yourPayout}</span>
+                  </div>
                 </div>
               </div>
-              <div className="bg-gray-700 rounded p-3">
-                <p className="text-sm text-gray-400 mb-1">Their Pick</p>
-                <p className="text-white font-medium">
+
+              <div className="bg-gray-700 rounded p-2 sm:p-3">
+                <p className="text-xs sm:text-sm text-gray-400 mb-1">Their Pick</p>
+                <p className="text-white font-medium text-sm sm:text-base">
                   {isReceiver ? bet.senderTeam : bet.receiverTeam}
                 </p>
-                <div className="mt-2 space-y-1">
-                  <p className="text-sm text-gray-400">
-                    {formatBetType(bet.betType)}
-                  </p>
-                  <p className="text-lg font-bold text-blue-400">
-                    {formatOdds(theirOdds, bet.betType)}
-                  </p>
-                  <p className="text-sm text-gray-400">
-                    Potential Payout: ${theirPayout}
-                  </p>
+                <p className="text-xs sm:text-sm text-gray-400">
+                  {formatOdds(theirOdds, bet.betType)}
+                </p>
+                <div className="mt-2 pt-2 border-t border-gray-600">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-400">Risk:</span>
+                    <span className="text-white">${bet.amount}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-400">To Win:</span>
+                    <span className="text-green-400 font-bold">${theirPayout}</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {bet.trashTalk && (
-              <div className="bg-gray-700 rounded p-3 mb-4">
-                <p className="text-sm text-gray-400 mb-1">Message</p>
-                <p className="text-white italic">"{bet.trashTalk}"</p>
-              </div>
-            )}
-
             {isReceiver && (
-              <div className="flex space-x-4">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <button
                   onClick={() => handleBetResponse(bet.id, 'accept')}
-                  className="flex-1 bg-green-600 text-white py-2 rounded hover:bg-green-700 transition-colors"
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base"
                 >
-                  Accept
+                  Accept Bet
                 </button>
                 <button
                   onClick={() => handleBetResponse(bet.id, 'decline')}
-                  className="flex-1 bg-red-600 text-white py-2 rounded hover:bg-red-700 transition-colors"
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base"
                 >
-                  Decline
+                  Decline Bet
                 </button>
+              </div>
+            )}
+
+            {!isReceiver && (
+              <div className="text-center">
+                <p className="text-gray-400 text-xs sm:text-sm">Waiting for {bet.receiver.username} to respond...</p>
               </div>
             )}
           </div>
