@@ -138,6 +138,11 @@ export default function Navigation() {
     )
   }
 
+  // Don't show navigation for unauthenticated users
+  if (status === 'unauthenticated') {
+    return null
+  }
+
   return (
     <nav className="bg-gray-900">
       <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
