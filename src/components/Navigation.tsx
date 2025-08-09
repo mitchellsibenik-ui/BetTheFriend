@@ -406,15 +406,6 @@ export default function Navigation() {
                 <>
                   <button
                     onClick={() => {
-                      forceRefreshNotifications()
-                      setIsMobileMenuOpen(false)
-                    }}
-                    className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium w-full text-left"
-                  >
-                    Refresh Notifications
-                  </button>
-                  <button
-                    onClick={() => {
                       handleLogout()
                       setIsMobileMenuOpen(false)
                     }}
