@@ -14,7 +14,7 @@ model User {
   password      String
   name          String?
   image         String?
-  balance       Float    @default(1000)
+  balance       Float    @default(10000)
   wins          Int      @default(0)
   losses        Int      @default(0)
   createdAt     DateTime @default(now())

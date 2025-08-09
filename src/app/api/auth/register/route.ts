@@ -62,6 +62,7 @@ export async function POST(request: Request) {
         email,
         username: username.toLowerCase(),
         password: hashedPassword,
+        balance: 10000, // Start new users with $10,000
       },
       select: {
         id: true,

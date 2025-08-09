@@ -247,9 +247,9 @@ export default function PendingBets() {
                   Bet Placed: {details.betTime}
                 </p>
               </div>
-              <div className="text-right">
+              <div className="text-right min-w-0">
                 <p className="text-white font-medium">{details.amount}</p>
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-gray-400 whitespace-nowrap">
                   {isReceiver ? 'From' : 'To'}: {isReceiver ? bet.sender.username : bet.receiver.username}
                 </p>
               </div>

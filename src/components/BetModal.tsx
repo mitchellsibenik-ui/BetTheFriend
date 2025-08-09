@@ -293,11 +293,11 @@ export default function BetModal({ isOpen, onClose, bet, onBetPlaced, isLiveBet 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-2 sm:p-4 z-50">
-      <div className="bg-gray-900 rounded-xl p-3 sm:p-4 max-w-sm w-full max-h-[95vh] overflow-y-auto shadow-2xl">
+      <div className="bg-gray-900 rounded-xl p-2 sm:p-3 max-w-sm w-full max-h-[90vh] overflow-y-auto shadow-2xl">
         {/* Header */}
-        <div className="flex justify-between items-start mb-3 sm:mb-4">
+        <div className="flex justify-between items-start mb-2 sm:mb-3">
           <div>
-            <h2 className="text-lg sm:text-xl font-bold text-white">Place a Bet</h2>
+            <h2 className="text-base sm:text-lg font-bold text-white">Place a Bet</h2>
             <p className="text-gray-400 text-xs">
               {new Date(bet.commence_time).toLocaleString('en-US', {
                 timeZone: 'America/New_York',
@@ -313,36 +313,36 @@ export default function BetModal({ isOpen, onClose, bet, onBetPlaced, isLiveBet 
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors p-1"
           >
-            <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
         {/* Game Info */}
-        <div className="bg-gray-800 rounded-lg p-3 mb-4 border border-gray-700">
+        <div className="bg-gray-800 rounded-lg p-2 mb-3 border border-gray-700">
           <div className="flex justify-between items-center">
-            <div className="text-white font-bold text-base">{bet.away_team}</div>
+            <div className="text-white font-bold text-sm">{bet.away_team}</div>
             <div className="text-gray-400 text-sm">@</div>
-            <div className="text-white font-bold text-base">{bet.home_team}</div>
+            <div className="text-white font-bold text-sm">{bet.home_team}</div>
           </div>
           {isLiveBet && bet.scores && (
-            <div className="text-center text-white font-bold text-xl mt-1">
+            <div className="text-center text-white font-bold text-lg mt-1">
               {bet.scores.away} - {bet.scores.home}
             </div>
           )}
         </div>
 
         {/* Bet Type Selection */}
-        <div className="mb-4">
-          <label className="block text-white font-semibold text-sm mb-2">Bet Type</label>
-          <div className="grid grid-cols-3 gap-2">
+        <div className="mb-3">
+          <label className="block text-white font-semibold text-xs mb-1">Bet Type</label>
+          <div className="grid grid-cols-3 gap-1">
             <button
               onClick={() => {
                 setSelectedBetType('moneyline')
                 setSelectedTeam(null)
               }}
-              className={`p-2 rounded-lg text-center transition-all text-sm ${
+              className={`p-1.5 rounded-lg text-center transition-all text-xs ${
                 selectedBetType === 'moneyline'
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
                   : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
@@ -355,7 +355,7 @@ export default function BetModal({ isOpen, onClose, bet, onBetPlaced, isLiveBet 
                 setSelectedBetType('spread')
                 setSelectedTeam(null)
               }}
-              className={`p-2 rounded-lg text-center transition-all text-sm ${
+              className={`p-1.5 rounded-lg text-center transition-all text-xs ${
                 selectedBetType === 'spread'
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
                   : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
@@ -368,7 +368,7 @@ export default function BetModal({ isOpen, onClose, bet, onBetPlaced, isLiveBet 
                 setSelectedBetType('overUnder')
                 setSelectedTeam(null)
               }}
-              className={`p-2 rounded-lg text-center transition-all text-sm ${
+              className={`p-1.5 rounded-lg text-center transition-all text-xs ${
                 selectedBetType === 'overUnder'
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
                   : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
@@ -381,34 +381,34 @@ export default function BetModal({ isOpen, onClose, bet, onBetPlaced, isLiveBet 
 
         {/* Team Selection */}
         {selectedBetType && (
-          <div className="mb-4">
-            <label className="block text-white font-semibold text-sm mb-2">Your Pick</label>
-            <div className="grid grid-cols-2 gap-2">
+          <div className="mb-3">
+            <label className="block text-white font-semibold text-xs mb-1">Your Pick</label>
+            <div className="grid grid-cols-2 gap-1">
               {selectedBetType === 'overUnder' ? (
                 <>
                   <button
                     onClick={() => setSelectedTeam('over')}
-                    className={`p-3 rounded-lg text-center transition-all ${
+                    className={`p-2 rounded-lg text-center transition-all ${
                       selectedTeam === 'over'
                         ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
                         : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                     }`}
                   >
-                    <div className="font-bold text-base">Over</div>
-                    <div className="text-xs mt-1">
+                    <div className="font-bold text-sm">Over</div>
+                    <div className="text-xs mt-0.5">
                       {overUnder} ({formatOdds(overOdds || -110)})
                     </div>
                   </button>
                   <button
                     onClick={() => setSelectedTeam('under')}
-                    className={`p-3 rounded-lg text-center transition-all ${
+                    className={`p-2 rounded-lg text-center transition-all ${
                       selectedTeam === 'under'
                         ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
                         : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                     }`}
                   >
-                    <div className="font-bold text-base">Under</div>
-                    <div className="text-xs mt-1">
+                    <div className="font-bold text-sm">Under</div>
+                    <div className="text-xs mt-0.5">
                       {overUnder} ({formatOdds(underOdds || -110)})
                     </div>
                   </button>
@@ -417,14 +417,14 @@ export default function BetModal({ isOpen, onClose, bet, onBetPlaced, isLiveBet 
                 <>
                   <button
                     onClick={() => setSelectedTeam('away')}
-                    className={`p-3 rounded-lg text-center transition-all ${
+                    className={`p-2 rounded-lg text-center transition-all ${
                       selectedTeam === 'away'
                         ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
                         : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                     }`}
                   >
-                    <div className="font-bold text-base">{bet.away_team}</div>
-                    <div className="text-xs mt-1">
+                    <div className="font-bold text-sm">{bet.away_team}</div>
+                    <div className="text-xs mt-0.5">
                       {selectedBetType === 'moneyline' 
                         ? formatOdds(awayOdds || 0) 
                         : selectedBetType === 'spread'
@@ -434,14 +434,14 @@ export default function BetModal({ isOpen, onClose, bet, onBetPlaced, isLiveBet 
                   </button>
                   <button
                     onClick={() => setSelectedTeam('home')}
-                    className={`p-3 rounded-lg text-center transition-all ${
+                    className={`p-2 rounded-lg text-center transition-all ${
                       selectedTeam === 'home'
                         ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
                         : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                     }`}
                   >
-                    <div className="font-bold text-base">{bet.home_team}</div>
-                    <div className="text-xs mt-1">
+                    <div className="font-bold text-sm">{bet.home_team}</div>
+                    <div className="text-xs mt-0.5">
                       {selectedBetType === 'moneyline' 
                         ? formatOdds(homeOdds || 0) 
                         : selectedBetType === 'spread'
@@ -456,12 +456,12 @@ export default function BetModal({ isOpen, onClose, bet, onBetPlaced, isLiveBet 
         )}
 
         {/* Friend Selection */}
-        <div className="mb-4">
-          <label className="block text-white font-semibold text-sm mb-2">Select Friend</label>
+        <div className="mb-3">
+          <label className="block text-white font-semibold text-xs mb-1">Select Friend</label>
           <select
             value={selectedFriend}
             onChange={(e) => setSelectedFriend(e.target.value)}
-            className="w-full p-2 rounded-lg bg-gray-800 text-white text-sm border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+            className="w-full p-1.5 rounded-lg bg-gray-800 text-white text-xs border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
           >
             <option value="">Select a friend</option>
             {friendsLoading ? (
@@ -481,86 +481,86 @@ export default function BetModal({ isOpen, onClose, bet, onBetPlaced, isLiveBet 
         </div>
 
         {/* Bet Amount */}
-        <div className="mb-4">
-          <label className="block text-white font-semibold text-sm mb-2">Wager Amount</label>
+        <div className="mb-3">
+          <label className="block text-white font-semibold text-xs mb-1">Wager Amount</label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-base">$</span>
+            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
             <input
               type="number"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="Enter amount"
-              className="w-full p-2 pl-7 rounded-lg bg-gray-800 text-white text-base border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+              className="w-full p-1.5 pl-6 rounded-lg bg-gray-800 text-white text-sm border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
             />
           </div>
         </div>
 
         {/* Payout Information */}
         {payout && selectedTeam && (
-          <div className="bg-gray-800 rounded-lg p-3 mb-4 border border-gray-700">
-            <div className="grid grid-cols-2 gap-3">
+          <div className="bg-gray-800 rounded-lg p-2 mb-3 border border-gray-700">
+            <div className="grid grid-cols-2 gap-2">
               {/* Your Side */}
-              <div className="bg-gray-900 rounded-lg p-3">
-                <div className="text-gray-400 text-xs uppercase tracking-wider mb-1">Your Pick</div>
-                <div className="text-white font-bold text-sm mb-1">
+              <div className="bg-gray-900 rounded-lg p-2">
+                <div className="text-gray-400 text-xs uppercase tracking-wider mb-0.5">Your Pick</div>
+                <div className="text-white font-bold text-xs mb-0.5">
                   {selectedTeam === 'home' ? bet.home_team :
                    selectedTeam === 'away' ? bet.away_team :
                    selectedTeam === 'over' ? 'Over' : 'Under'}
                 </div>
                 {selectedBetType === 'spread' && (
-                  <div className="text-blue-400 text-xs mb-1">Line: {selectedTeam === 'home' ? homeSpread : awaySpread}</div>
+                  <div className="text-blue-400 text-xs mb-0.5">Line: {selectedTeam === 'home' ? homeSpread : awaySpread}</div>
                 )}
                 {selectedBetType === 'overUnder' && (
-                  <div className="text-blue-400 text-xs mb-1">Total: {overUnder}</div>
+                  <div className="text-blue-400 text-xs mb-0.5">Total: {overUnder}</div>
                 )}
-                <div className="text-blue-400 text-xs mb-3">
+                <div className="text-blue-400 text-xs mb-2">
                   Odds: {formatOdds(payout.userOdds)}
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400 text-xs uppercase tracking-wider">Risk:</span>
-                    <span className="text-white font-bold text-sm">${payout.user.stake.toFixed(2)}</span>
+                    <span className="text-white font-bold text-xs">${payout.user.stake.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400 text-xs uppercase tracking-wider">To Win:</span>
-                    <span className="text-green-400 font-bold text-sm">${payout.user.profit.toFixed(2)}</span>
+                    <span className="text-green-400 font-bold text-xs">${payout.user.profit.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400 text-xs uppercase tracking-wider">Payout:</span>
-                    <span className="text-green-400 font-bold text-sm">${payout.user.payout.toFixed(2)}</span>
+                    <span className="text-green-400 font-bold text-xs">${payout.user.payout.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
 
               {/* Friend's Side */}
-              <div className="bg-gray-900 rounded-lg p-3">
-                <div className="text-gray-400 text-xs uppercase tracking-wider mb-1">Friend's Pick</div>
-                <div className="text-white font-bold text-sm mb-1">
+              <div className="bg-gray-900 rounded-lg p-2">
+                <div className="text-gray-400 text-xs uppercase tracking-wider mb-0.5">Friend's Pick</div>
+                <div className="text-white font-bold text-xs mb-0.5">
                   {selectedTeam === 'home' ? bet.away_team :
                    selectedTeam === 'away' ? bet.home_team :
                    selectedTeam === 'over' ? 'Under' : 'Over'}
                 </div>
                 {selectedBetType === 'spread' && (
-                  <div className="text-blue-400 text-xs mb-1">Line: {selectedTeam === 'home' ? awaySpread : homeSpread}</div>
+                  <div className="text-blue-400 text-xs mb-0.5">Line: {selectedTeam === 'home' ? awaySpread : homeSpread}</div>
                 )}
                 {selectedBetType === 'overUnder' && (
-                  <div className="text-blue-400 text-xs mb-1">Total: {overUnder}</div>
+                  <div className="text-blue-400 text-xs mb-0.5">Total: {overUnder}</div>
                 )}
-                <div className="text-blue-400 text-xs mb-3">
+                <div className="text-blue-400 text-xs mb-2">
                   Odds: {formatOdds(payout.friendOdds)}
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400 text-xs uppercase tracking-wider">Risk:</span>
-                    <span className="text-white font-bold text-sm">${payout.friend.stake.toFixed(2)}</span>
+                    <span className="text-white font-bold text-xs">${payout.friend.stake.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400 text-xs uppercase tracking-wider">To Win:</span>
-                    <span className="text-green-400 font-bold text-sm">${payout.friend.profit.toFixed(2)}</span>
+                    <span className="text-green-400 font-bold text-xs">${payout.friend.profit.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400 text-xs uppercase tracking-wider">Payout:</span>
-                    <span className="text-green-400 font-bold text-sm">${payout.friend.payout.toFixed(2)}</span>
+                    <span className="text-green-400 font-bold text-xs">${payout.friend.payout.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -572,7 +572,7 @@ export default function BetModal({ isOpen, onClose, bet, onBetPlaced, isLiveBet 
         <button
           onClick={handleSubmit}
           disabled={loading || !selectedBetType || !selectedTeam || !selectedFriend || !amount}
-          className={`w-full p-3 rounded-lg text-white font-bold text-base transition-all ${
+          className={`w-full p-2.5 rounded-lg text-white font-bold text-sm transition-all ${
             loading || !selectedBetType || !selectedTeam || !selectedFriend || !amount
               ? 'bg-gray-700 cursor-not-allowed'
               : 'bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20'
