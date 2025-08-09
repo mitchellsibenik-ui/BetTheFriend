@@ -303,10 +303,10 @@ export default function SocialPage() {
       ) : (
         <div className="bg-gray-800 rounded-lg overflow-hidden">
           {/* Leaderboard Header */}
-          <div className="grid grid-cols-12 gap-4 p-4 bg-gray-700 text-sm font-medium text-gray-300">
+          <div className="grid grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 bg-gray-700 text-xs sm:text-sm font-medium text-gray-300">
             <div className="col-span-1">Rank</div>
-            <div className="col-span-3">Username</div>
-            <div className="col-span-2 text-right">Record</div>
+            <div className="col-span-5 sm:col-span-4">Username</div>
+            <div className="col-span-2 sm:col-span-1 text-right">Record</div>
             <div className="col-span-2 text-right">Win Rate</div>
             <div className="col-span-2 text-right">Total Bets</div>
             <div className="col-span-2 text-right">P/L</div>
