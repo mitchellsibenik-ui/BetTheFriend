@@ -569,7 +569,8 @@ export default function SportsbookPage() {
   const in48Hours = new Date(now.getTime() + 48 * 60 * 60 * 1000)
   const filteredGames = games.filter(game => {
     const start = new Date(game.commence_time)
-    return start >= now && start <= in48Hours
+    // Show all games that haven't started yet (remove the 48 hour restriction)
+    return start >= now
   })
 
   if (status === 'loading') {
