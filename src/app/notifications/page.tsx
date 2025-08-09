@@ -76,7 +76,9 @@ export default function NotificationsPage() {
           window.dispatchEvent(new Event('notificationUpdate'))
         }, 100)
         
-        toast.success(action === 'accept' ? 'Invitation accepted!' : 'Invitation declined')
+        toast.success(action === 'accept' ? 'Invitation accepted!' : 'Invitation declined', {
+          duration: 2000,
+        })
       } else {
         const error = await response.json()
         toast.error(error.error || 'Failed to respond to invitation')
@@ -110,7 +112,9 @@ export default function NotificationsPage() {
           window.dispatchEvent(new Event('notificationUpdate'))
         }, 100)
         
-        toast.success(accept ? 'Friend request accepted!' : 'Friend request declined')
+        toast.success(accept ? 'Friend request accepted!' : 'Friend request declined', {
+          duration: 2000,
+        })
       } else {
         const error = await response.json()
         toast.error(error.error || 'Failed to respond to friend request')
@@ -151,7 +155,9 @@ export default function NotificationsPage() {
           window.dispatchEvent(new Event('notificationUpdate'))
         }, 100)
         
-        toast.success(action === 'accept' ? 'Bet accepted!' : 'Bet declined')
+        toast.success(action === 'accept' ? 'Bet accepted!' : 'Bet declined', {
+          duration: 2000,
+        })
       } else {
         const error = await response.json()
         toast.error(error.error || 'Failed to respond to bet')
@@ -212,7 +218,9 @@ export default function NotificationsPage() {
       if (response.ok) {
         setNotifications([])
         window.dispatchEvent(new Event('notificationUpdate'))
-        toast.success('All notifications cleared!')
+        toast.success('All notifications cleared!', {
+          duration: 2000,
+        })
       } else {
         const error = await response.json()
         toast.error(error.error || 'Failed to clear notifications')

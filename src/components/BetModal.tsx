@@ -186,7 +186,12 @@ export default function BetModal({ isOpen, onClose, bet, onBetPlaced, isLiveBet 
         throw new Error(responseData.error || 'Failed to place bet')
       }
 
-      toast.success('Bet placed successfully!')
+      toast.success('Bet placed successfully!', {
+        duration: 2000,
+        style: {
+          maxWidth: '90vw',
+        },
+      })
       
       // Trigger balance refresh
       window.dispatchEvent(new Event('balanceUpdate'))

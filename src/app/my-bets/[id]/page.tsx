@@ -105,7 +105,9 @@ export default function BetDetailsPage() {
           window.dispatchEvent(new Event('notificationUpdate'))
         }, 500)
         
-        toast.success(action === 'accept' ? 'Bet accepted!' : 'Bet declined')
+        toast.success(action === 'accept' ? 'Bet accepted!' : 'Bet declined', {
+          duration: 2000,
+        })
         router.push('/my-bets')
       } else {
         const error = await response.json()

@@ -34,7 +34,32 @@ export default function RootLayout({
           <main className="min-h-screen bg-gray-900">
             {children}
           </main>
-          <Toaster position="top-right" />
+          <Toaster 
+            position="top-right" 
+            toastOptions={{
+              duration: 3000,
+              style: {
+                background: '#1f2937',
+                color: '#fff',
+                fontSize: '14px',
+                maxWidth: '90vw',
+              },
+              success: {
+                duration: 2000,
+                iconTheme: {
+                  primary: '#10b981',
+                  secondary: '#fff',
+                },
+              },
+              error: {
+                duration: 4000,
+                iconTheme: {
+                  primary: '#ef4444',
+                  secondary: '#fff',
+                },
+              },
+            }}
+          />
         </AuthProvider>
       </body>
     </html>
