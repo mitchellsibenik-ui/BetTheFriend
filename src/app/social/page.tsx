@@ -309,21 +309,21 @@ export default function SocialPage() {
             <div className="col-span-2 text-right">Record</div>
             <div className="col-span-2 text-right">Win Rate</div>
             <div className="col-span-2 text-right">Total Bets</div>
-            <div className="col-span-2 text-right">Profit/Loss</div>
+            <div className="col-span-2 text-right">P/L</div>
           </div>
 
           {/* Friends List */}
           <div className="divide-y divide-gray-700 max-h-[600px] overflow-y-auto">
             {friends.map((friend, index) => (
-              <div key={friend.id} className="grid grid-cols-12 gap-4 p-4 hover:bg-gray-750 transition-colors">
-                <div className="col-span-1 text-gray-400">{index + 1}</div>
-                <div className="col-span-4 flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className="text-white font-medium truncate max-w-[120px] sm:max-w-[150px]">
+              <div key={friend.id} className="grid grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 hover:bg-gray-750 transition-colors">
+                <div className="col-span-1 text-gray-400 text-sm">{index + 1}</div>
+                <div className="col-span-5 sm:col-span-4 flex items-center justify-between min-w-0">
+                  <div className="flex items-center space-x-2 min-w-0 flex-1">
+                    <div className="text-white font-medium truncate">
                       {friend.username}
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2 ml-2">
+                  <div className="flex items-center space-x-1 ml-2 flex-shrink-0">
                     <button
                       onClick={() => {
                         setSelectedFriend(friend.id)
@@ -332,7 +332,7 @@ export default function SocialPage() {
                       className="text-gray-400 hover:text-green-500 transition-colors p-1"
                       title="Create wager"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                       </svg>
                     </button>
@@ -341,24 +341,24 @@ export default function SocialPage() {
                       className="text-gray-400 hover:text-red-500 transition-colors p-1"
                       title="Remove friend"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                       </svg>
                     </button>
                   </div>
                 </div>
-                <div className="col-span-1 text-right text-white">
+                <div className="col-span-2 sm:col-span-1 text-right text-white text-sm">
                   {friend.stats.wins}-{friend.stats.losses}
                 </div>
-                <div className="col-span-2 text-right text-white">
+                <div className="col-span-2 text-right text-white text-sm">
                   {friend.stats.totalBets > 0
                     ? `${Math.round((friend.stats.wins / friend.stats.totalBets) * 100)}%`
                     : '0%'}
                 </div>
-                <div className="col-span-2 text-right text-white">
+                <div className="col-span-2 text-right text-white text-sm">
                   {friend.stats.totalBets}
                 </div>
-                <div className={`col-span-2 text-right font-medium ${
+                <div className={`col-span-2 text-right font-medium text-sm ${
                   friend.stats.profit >= 0 ? 'text-green-500' : 'text-red-500'
                 }`}>
                   {friend.stats.profit >= 0 ? '+' : ''}${friend.stats.profit}

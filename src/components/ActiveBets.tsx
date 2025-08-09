@@ -213,7 +213,10 @@ export default function ActiveBets() {
                     <div className="flex justify-between items-center">
                       <span className="text-gray-400 text-sm">Team</span>
                       <span className="text-white font-medium text-sm">
-                        {isReceiver ? bet.receiverTeam : bet.senderTeam}
+                        {bet.betType === 'overUnder' 
+                          ? (isReceiver ? (bet.receiverTeam === 'Over' ? 'Over' : 'Under') : (bet.senderTeam === 'Over' ? 'Over' : 'Under'))
+                          : (isReceiver ? bet.receiverTeam : bet.senderTeam)
+                        }
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
@@ -245,7 +248,10 @@ export default function ActiveBets() {
                     <div className="flex justify-between items-center">
                       <span className="text-gray-400 text-sm">Team</span>
                       <span className="text-white font-medium text-sm">
-                        {isReceiver ? bet.senderTeam : bet.receiverTeam}
+                        {bet.betType === 'overUnder' 
+                          ? (isReceiver ? (bet.senderTeam === 'Over' ? 'Over' : 'Under') : (bet.receiverTeam === 'Over' ? 'Over' : 'Under'))
+                          : (isReceiver ? bet.senderTeam : bet.receiverTeam)
+                        }
                       </span>
                     </div>
                     <div className="flex justify-between items-center">

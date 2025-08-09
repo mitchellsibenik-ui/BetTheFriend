@@ -259,7 +259,10 @@ export default function PendingBets() {
               <div className="bg-gray-700 rounded p-2 sm:p-3">
                 <p className="text-xs sm:text-sm text-gray-400 mb-1">Your Pick</p>
                 <p className="text-white font-medium text-sm sm:text-base">
-                  {isReceiver ? bet.receiverTeam : bet.senderTeam}
+                  {bet.betType === 'overUnder' 
+                    ? (isReceiver ? (bet.receiverTeam === 'Over' ? 'Over' : 'Under') : (bet.senderTeam === 'Over' ? 'Over' : 'Under'))
+                    : (isReceiver ? bet.receiverTeam : bet.senderTeam)
+                  }
                 </p>
                 <p className="text-xs sm:text-sm text-gray-400">
                   {formatOdds(yourOdds, bet.betType)}
@@ -279,7 +282,10 @@ export default function PendingBets() {
               <div className="bg-gray-700 rounded p-2 sm:p-3">
                 <p className="text-xs sm:text-sm text-gray-400 mb-1">Their Pick</p>
                 <p className="text-white font-medium text-sm sm:text-base">
-                  {isReceiver ? bet.senderTeam : bet.receiverTeam}
+                  {bet.betType === 'overUnder' 
+                    ? (isReceiver ? (bet.senderTeam === 'Over' ? 'Over' : 'Under') : (bet.receiverTeam === 'Over' ? 'Over' : 'Under'))
+                    : (isReceiver ? bet.senderTeam : bet.receiverTeam)
+                  }
                 </p>
                 <p className="text-xs sm:text-sm text-gray-400">
                   {formatOdds(theirOdds, bet.betType)}

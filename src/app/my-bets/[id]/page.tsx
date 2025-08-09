@@ -276,7 +276,12 @@ export default function BetDetailsPage() {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-gray-400">Team:</span>
-                  <span className="text-white font-semibold">{bet.senderTeam}</span>
+                  <span className="text-white font-semibold">
+                    {bet.betType === 'overUnder' 
+                      ? (bet.senderTeam === 'Over' ? 'Over' : 'Under')
+                      : bet.senderTeam
+                    }
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-400">Bet Type:</span>
@@ -309,7 +314,12 @@ export default function BetDetailsPage() {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-gray-400">Team:</span>
-                  <span className="text-white font-semibold">{bet.receiverTeam}</span>
+                  <span className="text-white font-semibold">
+                    {bet.betType === 'overUnder' 
+                      ? (bet.receiverTeam === 'Over' ? 'Over' : 'Under')
+                      : bet.receiverTeam
+                    }
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-400">Bet Type:</span>
