@@ -1,1 +1,4 @@
-{}
+{
+  "/auth/login/page": "app/auth/login/page.js",
+  "/sportsbook/page": "app/sportsbook/page.js"
+}
