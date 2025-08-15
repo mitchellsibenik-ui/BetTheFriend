@@ -10,7 +10,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    console.log('Fetching notifications for user:', session.user.id)
+    console.log('Fetching notifications for user:', session.user.id, 'username:', session.user.username)
 
     const notifications = await prisma.notification.findMany({
       where: {
@@ -21,7 +21,10 @@ export async function GET() {
       }
     })
 
-    console.log('Found notifications:', notifications)
+    console.log('Found notifications:', notifications.length)
+    notifications.forEach(n => {
+      console.log('Notification:', { id: n.id, type: n.type, message: n.message, userId: n.userId, createdAt: n.createdAt })
+    })
 
     return NextResponse.json({ notifications })
   } catch (error) {

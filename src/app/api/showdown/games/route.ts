@@ -36,7 +36,7 @@ export async function GET(request: Request) {
     console.log('Fetching games for sport:', sport, 'date:', date)
 
     // Fetch games from The Odds API
-    const apiKey = process.env.NEXT_PUBLIC_ODDS_API_KEY
+    const apiKey = process.env.ODDS_API_KEY
     if (!apiKey) {
       console.error('API key not configured')
       return NextResponse.json({ error: 'API key not configured' }, { status: 500 })

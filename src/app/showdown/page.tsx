@@ -220,6 +220,7 @@ export default function ShowdownPage() {
       setSelectedRoom(null)
       
       // Trigger notification update for the invited friends
+      console.log('Dispatching notificationUpdate event')
       window.dispatchEvent(new Event('notificationUpdate'))
       
       fetchData()
