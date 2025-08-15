@@ -1,26 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-
-interface Game {
-  id: string
-  sport_key: string
-  sport_title: string
-  commence_time: string
-  home_team: string
-  away_team: string
-  bookmakers: Array<{
-    key: string
-    title: string
-    markets: Array<{
-      key: string
-      outcomes: Array<{
-        name: string
-        price: number
-      }>
-    }>
-  }>
-}
+import { oddsApi } from '@/lib/api/odds'
 
 export async function GET(request: Request) {
   try {
@@ -35,30 +16,28 @@ export async function GET(request: Request) {
 
     console.log('Fetching games for sport:', sport, 'date:', date)
 
-    // Fetch games from The Odds API
-    const apiKey = process.env.ODDS_API_KEY
-    if (!apiKey) {
-      console.error('API key not configured')
-      return NextResponse.json({ error: 'API key not configured' }, { status: 500 })
+    // Map the sport key to the format expected by oddsApi
+    const sportMap: { [key: string]: string } = {
+      'baseball_mlb': 'mlb',
+      'americanfootball_nfl': 'nfl',
+      'basketball_nba': 'nba',
+      'icehockey_nhl': 'nhl'
     }
 
-    console.log('API key found, length:', apiKey.length)
+    const mappedSport = sportMap[sport] || 'mlb'
+    console.log('Mapped sport:', mappedSport)
 
-    const apiUrl = `https://api.the-odds-api.com/v4/sports/${sport}/odds?apiKey=${apiKey}&regions=us&markets=moneyline&dateFormat=iso&oddsFormat=american&date=${date}`
-    console.log('Fetching from URL:', apiUrl)
+    // Use the exact same pattern as the sportsbook
+    const games = await oddsApi.getOdds(mappedSport)
+    console.log('Fetched games from oddsApi:', games.length)
 
-    const response = await fetch(apiUrl, { cache: 'no-store' })
-
-    console.log('API response status:', response.status)
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('API response error:', errorText)
-      throw new Error(`API request failed: ${response.status} - ${errorText}`)
+    if (!games || !Array.isArray(games)) {
+      console.error('Invalid API response:', games)
+      return NextResponse.json(
+        { error: 'Invalid API response format' },
+        { status: 500 }
+      )
     }
-
-    const games: Game[] = await response.json()
-    console.log('Received games from API:', games.length)
 
     // Filter games for the specific date and format them
     const formattedGames = games
@@ -68,15 +47,15 @@ export async function GET(request: Request) {
       })
       .map(game => ({
         id: game.id,
-        sport_key: game.sport_key,
-        sport_title: game.sport_title,
+        sport_key: sport,
+        sport_title: sport.replace('_', ' ').toUpperCase(),
         commence_time: game.commence_time,
         home_team: game.home_team,
         away_team: game.away_team,
-        moneyline: game.bookmakers[0]?.markets.find(m => m.key === 'moneyline')?.outcomes || []
+        moneyline: game.bookmakers?.[0]?.markets?.find(m => m.key === 'h2h')?.outcomes || []
       }))
 
-    console.log('Formatted games:', formattedGames.length)
+    console.log('Formatted games for date', date, ':', formattedGames.length)
     return NextResponse.json(formattedGames)
   } catch (error) {
     console.error('Error fetching games:', error)
