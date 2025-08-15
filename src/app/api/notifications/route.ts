@@ -23,7 +23,14 @@ export async function GET() {
 
     console.log('Found notifications:', notifications.length)
     notifications.forEach(n => {
-      console.log('Notification:', { id: n.id, type: n.type, message: n.message, userId: n.userId, createdAt: n.createdAt })
+      console.log('Notification:', { 
+        id: n.id, 
+        type: n.type, 
+        message: n.message, 
+        userId: n.userId, 
+        createdAt: n.createdAt,
+        data: n.data 
+      })
     })
 
     return NextResponse.json({ notifications })

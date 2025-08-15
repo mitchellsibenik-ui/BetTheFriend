@@ -92,6 +92,14 @@ export async function POST(
     const notifications = await Promise.all(
       validFriendIds.map(async (friendId) => {
         console.log('Creating notification for friend ID:', friendId)
+        
+        // Verify the friend exists
+        const friend = await prisma.user.findUnique({
+          where: { id: friendId },
+          select: { id: true, username: true }
+        })
+        console.log('Friend found:', friend)
+        
         const notification = await prisma.notification.create({
           data: {
             userId: friendId,
@@ -105,7 +113,7 @@ export async function POST(
             })
           }
         })
-        console.log('Created notification:', { id: notification.id, userId: notification.userId, type: notification.type })
+        console.log('Created notification:', { id: notification.id, userId: notification.userId, type: notification.type, message: notification.message })
         return notification
       })
     )
