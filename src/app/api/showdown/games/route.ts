@@ -33,22 +33,32 @@ export async function GET(request: Request) {
     const sport = searchParams.get('sport') || 'baseball_mlb'
     const date = searchParams.get('date') || new Date().toISOString().split('T')[0]
 
+    console.log('Fetching games for sport:', sport, 'date:', date)
+
     // Fetch games from The Odds API
     const apiKey = process.env.NEXT_PUBLIC_ODDS_API_KEY
     if (!apiKey) {
+      console.error('API key not configured')
       return NextResponse.json({ error: 'API key not configured' }, { status: 500 })
     }
 
-    const response = await fetch(
-      `https://api.the-odds-api.com/v4/sports/${sport}/odds?apiKey=${apiKey}&regions=us&markets=moneyline&dateFormat=iso&oddsFormat=american&date=${date}`,
-      { cache: 'no-store' }
-    )
+    console.log('API key found, length:', apiKey.length)
+
+    const apiUrl = `https://api.the-odds-api.com/v4/sports/${sport}/odds?apiKey=${apiKey}&regions=us&markets=moneyline&dateFormat=iso&oddsFormat=american&date=${date}`
+    console.log('Fetching from URL:', apiUrl)
+
+    const response = await fetch(apiUrl, { cache: 'no-store' })
+
+    console.log('API response status:', response.status)
 
     if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`)
+      const errorText = await response.text()
+      console.error('API response error:', errorText)
+      throw new Error(`API request failed: ${response.status} - ${errorText}`)
     }
 
     const games: Game[] = await response.json()
+    console.log('Received games from API:', games.length)
 
     // Filter games for the specific date and format them
     const formattedGames = games
@@ -66,6 +76,7 @@ export async function GET(request: Request) {
         moneyline: game.bookmakers[0]?.markets.find(m => m.key === 'moneyline')?.outcomes || []
       }))
 
+    console.log('Formatted games:', formattedGames.length)
     return NextResponse.json(formattedGames)
   } catch (error) {
     console.error('Error fetching games:', error)

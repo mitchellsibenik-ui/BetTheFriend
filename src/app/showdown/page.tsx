@@ -94,6 +94,9 @@ export default function ShowdownPage() {
         friendsRes.json()
       ])
 
+      console.log('Friends API response:', friendsData)
+      console.log('Friends array:', friendsData.friends)
+
       // Filter rooms by status
       const filteredRooms = statusFilter === 'all' 
         ? roomsData 
@@ -184,9 +187,17 @@ export default function ShowdownPage() {
       return
     }
 
+    if (!selectedRoom?.id) {
+      toast.error('No room selected')
+      return
+    }
+
     try {
       setIsInviting(true)
-      const response = await fetch(`/api/showdown/rooms/${selectedRoom?.id}/invite`, {
+      console.log('Inviting friends:', selectedFriends, 'to room:', selectedRoom.id)
+      console.log('Friends data:', friends)
+      
+      const response = await fetch(`/api/showdown/rooms/${selectedRoom.id}/invite`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -196,13 +207,21 @@ export default function ShowdownPage() {
 
       if (!response.ok) {
         const errorData = await response.json()
+        console.error('Invite API error:', errorData)
         throw new Error(errorData.error || 'Failed to invite friends')
       }
 
+      const result = await response.json()
+      console.log('Invite success:', result)
+      
       toast.success('Friends invited successfully!')
       setIsInviteModalOpen(false)
       setSelectedFriends([])
       setSelectedRoom(null)
+      
+      // Trigger notification update for the invited friends
+      window.dispatchEvent(new Event('notificationUpdate'))
+      
       fetchData()
     } catch (err) {
       console.error('Error inviting friends:', err)

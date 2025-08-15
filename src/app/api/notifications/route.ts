@@ -10,6 +10,8 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    console.log('Fetching notifications for user:', session.user.id)
+
     const notifications = await prisma.notification.findMany({
       where: {
         userId: session.user.id
@@ -18,6 +20,8 @@ export async function GET() {
         createdAt: 'desc'
       }
     })
+
+    console.log('Found notifications:', notifications)
 
     return NextResponse.json({ notifications })
   } catch (error) {

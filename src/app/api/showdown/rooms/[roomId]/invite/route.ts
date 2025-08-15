@@ -77,6 +77,7 @@ export async function POST(
     }
 
     // Create notifications for each friend
+    console.log('Creating notifications for friends:', validFriendIds)
     const notifications = await Promise.all(
       validFriendIds.map(friendId =>
         prisma.notification.create({
@@ -94,6 +95,8 @@ export async function POST(
         })
       )
     )
+
+    console.log('Created notifications:', notifications)
 
     return NextResponse.json({
       message: `Invites sent to ${notifications.length} friends`,
