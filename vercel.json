@@ -15,11 +15,7 @@
       "schedule": "0 0 * * *"
     },
     {
-      "path": "/api/showdown/expire",
-      "schedule": "0 6 * * *"
-    },
-    {
-      "path": "/api/bets/expire",
+      "path": "/api/cron/expire",
       "schedule": "0 6 * * *"
     }
   ]

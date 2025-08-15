@@ -3,11 +3,61 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST() {
   try {
-    console.log('🔍 Checking for expired showdown rooms...')
+    console.log('🔍 Checking for expired bets and showdown rooms...')
     
     const now = new Date()
     
-    // Find all open rooms where games have started
+    // 1. Process expired pending bets
+    console.log('Processing expired pending bets...')
+    const expiredBets = await prisma.bet.findMany({
+      where: {
+        status: 'PENDING',
+        game: {
+          startTime: {
+            lt: now // Games that started before now
+          }
+        }
+      },
+      include: {
+        game: true,
+        sender: true,
+        receiver: true
+      }
+    })
+
+    console.log(`Found ${expiredBets.length} expired bets`)
+
+    // Process each expired bet
+    for (const bet of expiredBets) {
+      console.log(`Processing expired bet: ${bet.id} for game ${bet.game.homeTeam} vs ${bet.game.awayTeam}`)
+      
+      // Mark bet as expired and refund the sender
+      await prisma.$transaction(async (tx) => {
+        // Update bet status to expired
+        await tx.bet.update({
+          where: { id: bet.id },
+          data: { 
+            status: 'EXPIRED',
+            result: 'Game started before bet was accepted - automatically expired'
+          }
+        })
+
+        // Refund the sender's amount
+        await tx.user.update({
+          where: { id: bet.senderId },
+          data: {
+            balance: {
+              increment: bet.amount
+            }
+          }
+        })
+        
+        console.log(`Refunded $${bet.amount} to sender ${bet.sender.username}`)
+      })
+    }
+
+    // 2. Process expired showdown rooms
+    console.log('Processing expired showdown rooms...')
     const expiredRooms = await prisma.showdownRoom.findMany({
       where: {
         status: 'open',
@@ -26,17 +76,12 @@ export async function POST() {
 
     console.log(`Found ${expiredRooms.length} expired rooms`)
 
-    if (expiredRooms.length === 0) {
-      return NextResponse.json({ message: 'No expired rooms found' })
-    }
-
     // Process each expired room
     for (const room of expiredRooms) {
       console.log(`Processing expired room: ${room.name} (${room.gameDate})`)
       
       // Check if any participants haven't made picks
       const participantsWithoutPicks = room.participants.filter(p => {
-        // Count picks for this participant
         return p.picks.length === 0
       })
 
@@ -75,16 +120,17 @@ export async function POST() {
       }
     }
 
-    console.log('✅ Expired rooms processing completed')
+    console.log('✅ Expiration processing completed')
     return NextResponse.json({ 
-      message: `Processed ${expiredRooms.length} expired rooms`,
-      expiredCount: expiredRooms.length
+      message: `Processed ${expiredBets.length} expired bets and ${expiredRooms.length} expired rooms`,
+      expiredBetsCount: expiredBets.length,
+      expiredRoomsCount: expiredRooms.length
     })
 
   } catch (error) {
-    console.error('❌ Error processing expired rooms:', error)
+    console.error('❌ Error processing expired items:', error)
     return NextResponse.json(
-      { error: 'Failed to process expired rooms' },
+      { error: 'Failed to process expired items' },
       { status: 500 }
     )
   }
