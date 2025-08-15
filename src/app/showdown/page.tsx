@@ -100,7 +100,7 @@ export default function ShowdownPage() {
         : roomsData.filter((room: ShowdownRoom) => room.status === statusFilter)
 
       setRooms(Array.isArray(filteredRooms) ? filteredRooms : [])
-      setFriends(friendsData || [])
+      setFriends(friendsData.friends || [])
     } catch (err) {
       console.error('Error fetching data:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch data')
