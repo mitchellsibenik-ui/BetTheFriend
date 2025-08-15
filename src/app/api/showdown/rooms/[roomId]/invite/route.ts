@@ -65,9 +65,20 @@ export async function POST(
       }
     })
 
-    const validFriendIds = friendships.map(f => 
-      f.senderId === session.user.id ? f.receiverId : f.senderId
-    )
+    console.log('Found friendships:', friendships)
+    console.log('Original friendIds:', friendIds)
+
+    // Extract the friend IDs from the friendships
+    const validFriendIds = []
+    for (const friendship of friendships) {
+      if (friendship.senderId === session.user.id) {
+        validFriendIds.push(friendship.receiverId)
+      } else if (friendship.receiverId === session.user.id) {
+        validFriendIds.push(friendship.senderId)
+      }
+    }
+
+    console.log('Valid friend IDs:', validFriendIds)
 
     if (validFriendIds.length === 0) {
       return NextResponse.json(
@@ -79,8 +90,9 @@ export async function POST(
     // Create notifications for each friend
     console.log('Creating notifications for friends:', validFriendIds)
     const notifications = await Promise.all(
-      validFriendIds.map(friendId =>
-        prisma.notification.create({
+      validFriendIds.map(async (friendId) => {
+        console.log('Creating notification for friend ID:', friendId)
+        const notification = await prisma.notification.create({
           data: {
             userId: friendId,
             type: 'room_invite',
@@ -93,7 +105,9 @@ export async function POST(
             })
           }
         })
-      )
+        console.log('Created notification:', { id: notification.id, userId: notification.userId, type: notification.type })
+        return notification
+      })
     )
 
     console.log('Created notifications:', notifications)
