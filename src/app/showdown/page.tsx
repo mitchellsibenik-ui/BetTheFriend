@@ -119,6 +119,19 @@ export default function ShowdownPage() {
     }
   }, [status, statusFilter])
 
+  // Listen for showdown invitation accepted events
+  useEffect(() => {
+    const handleShowdownInvitationAccepted = () => {
+      console.log('Showdown invitation accepted, refreshing data...')
+      fetchData()
+    }
+
+    window.addEventListener('showdownInvitationAccepted', handleShowdownInvitationAccepted)
+    return () => {
+      window.removeEventListener('showdownInvitationAccepted', handleShowdownInvitationAccepted)
+    }
+  }, [])
+
   const handleCreateRoom = async () => {
     if (!newRoomData.name || newRoomData.entryFee <= 0) {
       toast.error('Please fill in all required fields')

@@ -71,6 +71,17 @@ export default function NotificationsPage() {
         await fetchNotifications() // Refresh notifications list
         window.dispatchEvent(new Event('notificationUpdate')) // Trigger counter update
         
+        // If accepting an invitation, trigger showdown data refresh
+        if (action === 'accept') {
+          const result = await response.json()
+          if (result.roomId) {
+            // Dispatch custom event for showdown page to refresh
+            window.dispatchEvent(new CustomEvent('showdownInvitationAccepted', { 
+              detail: { roomId: result.roomId } 
+            }))
+          }
+        }
+        
         // Also trigger a small delay to ensure the counter updates
         setTimeout(() => {
           window.dispatchEvent(new Event('notificationUpdate'))
