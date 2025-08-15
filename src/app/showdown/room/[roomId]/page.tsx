@@ -79,21 +79,21 @@ export default function ShowdownRoomPage() {
       setLoading(true)
       setError(null)
 
-      const [roomRes, gamesRes] = await Promise.all([
-        fetch(`/api/showdown/rooms/${roomId}`),
-        fetch(`/api/showdown/games?sport=${room?.sport || 'baseball_mlb'}&date=${room?.gameDate || new Date().toISOString().split('T')[0]}`)
-      ])
-
-      if (!roomRes.ok || !gamesRes.ok) {
+      // First fetch the room data
+      const roomRes = await fetch(`/api/showdown/rooms/${roomId}`)
+      if (!roomRes.ok) {
         throw new Error('Failed to fetch room data')
       }
-
-      const [roomData, gamesData] = await Promise.all([
-        roomRes.json(),
-        gamesRes.json()
-      ])
-
+      const roomData = await roomRes.json()
       setRoom(roomData)
+
+      // Then fetch games using the room data
+      const gamesRes = await fetch(`/api/showdown/games?sport=${roomData.sport}&date=${roomData.gameDate}`)
+      if (!gamesRes.ok) {
+        throw new Error('Failed to fetch games data')
+      }
+      const gamesData = await gamesRes.json()
+
       setGames(gamesData)
 
       // Initialize picks array

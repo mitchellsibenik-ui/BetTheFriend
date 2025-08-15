@@ -13,6 +13,10 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    if (!session.user.username) {
+      return NextResponse.json({ error: 'Username not found in session' }, { status: 400 })
+    }
+
     const { friendIds } = await request.json()
 
     if (!Array.isArray(friendIds) || friendIds.length === 0) {
