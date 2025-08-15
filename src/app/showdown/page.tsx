@@ -102,7 +102,10 @@ export default function ShowdownPage() {
         ? roomsData 
         : roomsData.filter((room: ShowdownRoom) => room.status === statusFilter)
 
-      setRooms(Array.isArray(filteredRooms) ? filteredRooms : [])
+      // Apply expiration filter to remove rooms where games have started
+      const validRooms = getValidRooms(filteredRooms)
+
+      setRooms(Array.isArray(validRooms) ? validRooms : [])
       setFriends(friendsData.friends || [])
     } catch (err) {
       console.error('Error fetching data:', err)
@@ -264,6 +267,24 @@ export default function ShowdownPage() {
       default:
         return 'text-gray-400'
     }
+  }
+
+  // Check if a game has started (for expiration logic)
+  const hasGameStarted = (gameDate: string) => {
+    const gameStartTime = new Date(gameDate)
+    const now = new Date()
+    return gameStartTime < now
+  }
+
+  // Filter out rooms where games have started and they're still open
+  const getValidRooms = (rooms: ShowdownRoom[]) => {
+    return rooms.filter(room => {
+      // If room is not open, show it (in_progress, completed, etc.)
+      if (room.status !== 'open') return true
+      
+      // If room is open, only show if games haven't started yet
+      return !hasGameStarted(room.gameDate)
+    })
   }
 
   if (status === 'loading') {
