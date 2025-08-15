@@ -360,7 +360,7 @@ export default function ShowdownPage() {
                     {room.participants.length} participant{room.participants.length !== 1 ? 's' : ''}
                   </div>
                   <div className="flex space-x-2">
-                    {room.status === 'open' && room.creatorId !== session?.user?.id && (
+                    {room.status === 'open' && room.creatorId !== session?.user?.id && !room.participants.some(p => p.user.id === session?.user?.id) && (
                       <button
                         onClick={() => handleJoinRoom(room.id)}
                         disabled={isJoining === room.id}
