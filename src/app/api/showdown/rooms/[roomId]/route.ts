@@ -20,6 +20,7 @@ export async function GET(
       include: {
         creator: {
           select: {
+            id: true,
             username: true
           }
         },
@@ -27,10 +28,10 @@ export async function GET(
           include: {
             user: {
               select: {
+                id: true,
                 username: true
               }
-            },
-            picks: true
+            }
           }
         }
       }
@@ -54,12 +55,17 @@ export async function GET(
       creatorId: room.creatorId,
       entryFee: room.entryFee,
       status: room.status,
+      sport: room.sport,
+      sportTitle: room.sportTitle,
+      gameDate: room.gameDate,
+      createdAt: room.createdAt,
+      creator: room.creator,
       participants: room.participants.map(p => ({
         id: p.id,
         userId: p.userId,
-        username: p.user.username,
+        roomId: p.roomId,
         score: p.score,
-        picks: p.picks
+        user: p.user
       }))
     })
   } catch (error) {

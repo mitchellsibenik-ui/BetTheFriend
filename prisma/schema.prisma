@@ -142,6 +142,9 @@ model ShowdownRoom {
   participants ShowdownParticipant[]
   entryFee    Float
   status      String   @default("open") // open, in_progress, completed
+  sport       String   // e.g., "baseball_mlb", "americanfootball_nfl"
+  sportTitle  String   // e.g., "MLB", "NFL"
+  gameDate    String   // YYYY-MM-DD format
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

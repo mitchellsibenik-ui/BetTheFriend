@@ -123,46 +123,66 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { name, entryFee } = await request.json()
+    const { name, entryFee, sport, sportTitle, gameDate } = await request.json()
 
-    if (!name || typeof entryFee !== 'number') {
+    if (!name || !entryFee || !sport || !sportTitle || !gameDate) {
       return NextResponse.json(
-        { error: 'Name and entry fee are required' },
+        { error: 'Missing required fields' },
         { status: 400 }
       )
     }
 
-    const room = await prisma.showdownRoom.create({
-      data: {
-        name,
-        entryFee,
-        creatorId: session.user.id,
-        status: 'open',
-        participants: {
-          create: {
-            userId: session.user.id,
-            score: 0
-          }
+    // Validate entry fee
+    if (entryFee <= 0) {
+      return NextResponse.json(
+        { error: 'Entry fee must be greater than 0' },
+        { status: 400 }
+      )
+    }
+
+    // Check if user has enough balance
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { balance: true }
+    })
+
+    if (!user || user.balance < entryFee) {
+      return NextResponse.json(
+        { error: 'Insufficient balance' },
+        { status: 400 }
+      )
+    }
+
+    // Create room and add creator as first participant
+    const room = await prisma.$transaction(async (tx) => {
+      // Deduct entry fee from creator
+      await tx.user.update({
+        where: { id: session.user.id },
+        data: { balance: { decrement: entryFee } }
+      })
+
+      // Create room
+      const newRoom = await tx.showdownRoom.create({
+        data: {
+          name,
+          entryFee,
+          sport,
+          sportTitle,
+          gameDate,
+          creatorId: session.user.id
         }
-      },
-      include: {
-        creator: {
-          select: {
-            id: true,
-            username: true
-          }
-        },
-        participants: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                username: true
-              }
-            }
-          }
+      })
+
+      // Add creator as first participant
+      await tx.showdownParticipant.create({
+        data: {
+          userId: session.user.id,
+          roomId: newRoom.id,
+          score: 0
         }
-      }
+      })
+
+      return newRoom
     })
 
     return NextResponse.json(room)

@@ -2,16 +2,20 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 
 interface Game {
   id: string
-  homeTeam: string
-  awayTeam: string
-  startTime: string
-  sport: string
-  league: string
+  sport_key: string
+  sport_title: string
+  commence_time: string
+  home_team: string
+  away_team: string
+  moneyline: Array<{
+    name: string
+    price: number
+  }>
 }
 
 interface ShowdownRoom {
@@ -20,49 +24,68 @@ interface ShowdownRoom {
   creatorId: string
   entryFee: number
   status: string
-  participants: {
+  sport: string
+  sportTitle: string
+  gameDate: string
+  createdAt: string
+  creator: {
+    id: string
+    username: string
+  }
+  participants: Array<{
     id: string
     userId: string
-    username: string
+    roomId: string
     score: number
-    picks: {
-      gameId: string
-      selectedTeam: string
-      type: string
-      isCorrect: boolean | null
-    }[]
-  }[]
+    user: {
+      id: string
+      username: string
+    }
+  }>
 }
 
-export default function ShowdownRoomPage({ params }: { params: { roomId: string } }) {
+interface Pick {
+  gameId: string
+  selectedTeam: string
+}
+
+export default function ShowdownRoomPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const params = useParams()
+  const roomId = params.roomId as string
+
   const [room, setRoom] = useState<ShowdownRoom | null>(null)
   const [games, setGames] = useState<Game[]>([])
+  const [picks, setPicks] = useState<Pick[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [userPicks, setUserPicks] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
-  const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/login')
+      router.push('/auth/login')
     }
   }, [status, router])
 
-  const fetchData = async () => {
+  useEffect(() => {
+    if (status === 'authenticated' && roomId) {
+      fetchRoomData()
+    }
+  }, [status, roomId])
+
+  const fetchRoomData = async () => {
     try {
       setLoading(true)
       setError(null)
 
       const [roomRes, gamesRes] = await Promise.all([
-        fetch(`/api/showdown/rooms/${params.roomId}`),
-        fetch('/api/showdown/games')
+        fetch(`/api/showdown/rooms/${roomId}`),
+        fetch(`/api/showdown/games?sport=${room?.sport || 'baseball_mlb'}&date=${room?.gameDate || new Date().toISOString().split('T')[0]}`)
       ])
 
       if (!roomRes.ok || !gamesRes.ok) {
-        throw new Error('Failed to fetch data')
+        throw new Error('Failed to fetch room data')
       }
 
       const [roomData, gamesData] = await Promise.all([
@@ -71,66 +94,40 @@ export default function ShowdownRoomPage({ params }: { params: { roomId: string 
       ])
 
       setRoom(roomData)
-      setGames(gamesData || [])
+      setGames(gamesData)
 
-      // If user has existing picks, load them
-      const currentUser = roomData.participants.find(
-        (p: any) => p.userId === session?.user?.id
-      )
-      if (currentUser?.picks) {
-        const picks: Record<string, string> = {}
-        currentUser.picks.forEach((pick: any) => {
-          picks[pick.gameId] = pick.selectedTeam
-        })
-        setUserPicks(picks)
-      }
+      // Initialize picks array
+      const initialPicks = gamesData.map((game: Game) => ({
+        gameId: game.id,
+        selectedTeam: ''
+      }))
+      setPicks(initialPicks)
     } catch (err) {
-      console.error('Error fetching data:', err)
-      setError(err instanceof Error ? err.message : 'Failed to fetch data')
-      toast.error('Failed to load data')
+      console.error('Error fetching room data:', err)
+      setError(err instanceof Error ? err.message : 'Failed to fetch room data')
+      toast.error('Failed to load room data')
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => {
-    if (status === 'authenticated') {
-      fetchData()
-
-      // Set up polling for real-time updates
-      const interval = setInterval(fetchData, 30000) // Poll every 30 seconds
-      setRefreshInterval(interval)
-
-      return () => {
-        if (interval) {
-          clearInterval(interval)
-        }
-      }
-    }
-  }, [status, params.roomId, session?.user?.id])
-
-  const handlePick = (gameId: string, team: string) => {
-    setUserPicks(prev => ({
-      ...prev,
-      [gameId]: team
-    }))
+  const handlePickSelection = (gameId: string, team: string) => {
+    setPicks(prev => prev.map(pick => 
+      pick.gameId === gameId ? { ...pick, selectedTeam: team } : pick
+    ))
   }
 
   const handleSubmitPicks = async () => {
-    if (Object.keys(userPicks).length !== games.length) {
-      toast.error('Please make a pick for every game')
+    // Validate all picks are made
+    const incompletePicks = picks.filter(pick => !pick.selectedTeam)
+    if (incompletePicks.length > 0) {
+      toast.error('Please make a pick for all games')
       return
     }
 
     try {
       setSubmitting(true)
-      const picks = Object.entries(userPicks).map(([gameId, team]) => ({
-        gameId,
-        selectedTeam: team,
-        type: 'moneyline'
-      }))
-
-      const res = await fetch(`/api/showdown/rooms/${params.roomId}/picks`, {
+      const response = await fetch(`/api/showdown/rooms/${roomId}/picks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -138,255 +135,269 @@ export default function ShowdownRoomPage({ params }: { params: { roomId: string 
         body: JSON.stringify({ picks }),
       })
 
-      if (!res.ok) {
-        throw new Error('Failed to submit picks')
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to submit picks')
       }
 
-      toast.success('Picks submitted successfully')
-      fetchData() // Refresh data to show updated picks
+      toast.success('Picks submitted successfully!')
+      // Refresh room data to show updated status
+      fetchRoomData()
     } catch (err) {
       console.error('Error submitting picks:', err)
-      toast.error('Failed to submit picks')
+      toast.error(err instanceof Error ? err.message : 'Failed to submit picks')
     } finally {
       setSubmitting(false)
     }
   }
 
+  const handleGradeResults = async () => {
+    if (!room || room.creatorId !== session?.user?.id) {
+      toast.error('Only room creator can grade results')
+      return
+    }
+
+    try {
+      setSubmitting(true)
+      const response = await fetch(`/api/showdown/rooms/${roomId}/grade`, {
+        method: 'POST',
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to grade results')
+      }
+
+      const result = await response.json()
+      toast.success(`Results graded! Winners: ${result.results.winners.join(', ')}`)
+      fetchRoomData()
+    } catch (err) {
+      console.error('Error grading results:', err)
+      toast.error(err instanceof Error ? err.message : 'Failed to grade results')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const formatTime = (timeString: string) => {
+    return new Date(timeString).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZoneName: 'short'
+    })
+  }
+
+  const formatOdds = (price: number) => {
+    if (price > 0) {
+      return `+${price}`
+    }
+    return price.toString()
+  }
+
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col items-center justify-center h-[60vh]">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent"></div>
-            <p className="mt-4 text-xl text-gray-300">Loading room data...</p>
-          </div>
-        </div>
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
       </div>
     )
   }
 
-  if (error) {
+  if (status === 'unauthenticated') {
+    return null
+  }
+
+  if (error || !room) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col items-center justify-center h-[60vh]">
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6 text-center">
-              <svg className="w-12 h-12 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              <p className="text-red-500 text-lg font-medium mb-2">{error}</p>
-              <button
-                onClick={fetchData}
-                className="mt-4 px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-              >
-                Try Again
-              </button>
-            </div>
-          </div>
-        </div>
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-red-400 text-xl">Error: {error || 'Room not found'}</div>
       </div>
     )
   }
 
-  if (!room) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col items-center justify-center h-[60vh]">
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
-              <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p className="text-gray-300 text-lg font-medium mb-2">Room not found</p>
-              <button
-                onClick={() => router.push('/showdown')}
-                className="mt-4 px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-              >
-                Back to Showdown
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  const currentUser = room.participants.find(p => p.userId === session?.user?.id)
-  const hasSubmittedPicks = currentUser?.picks.length === games.length
+  const isCreator = room.creatorId === session?.user?.id
+  const isParticipant = room.participants.some(p => p.user.id === session?.user?.id)
+  const canMakePicks = room.status === 'open' && isParticipant
+  const canGrade = room.status === 'in_progress' && isCreator
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Room Info and Standings */}
-          <div className="lg:col-span-1 space-y-6">
-            <div className="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700">
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-white">{room.name}</h2>
-                  <div className="mt-2 space-y-1">
-                    <p className="text-gray-300">Entry Fee: <span className="text-green-400">${room.entryFee}</span></p>
-                    <p className="text-gray-300">Status: <span className="capitalize text-blue-400">{room.status}</span></p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => router.push('/showdown')}
-                  className="text-blue-400 hover:text-blue-300 transition-colors"
-                >
-                  Back
-                </button>
+    <div className="min-h-screen bg-gray-900 text-white p-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <button
+            onClick={() => router.push('/showdown')}
+            className="text-blue-400 hover:text-blue-300 mb-4 flex items-center"
+          >
+            ← Back to Showdowns
+          </button>
+          
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">{room.name}</h1>
+              <div className="flex items-center space-x-4 text-sm text-gray-400">
+                <span>Created by {room.creator.username}</span>
+                <span>•</span>
+                <span className={`px-2 py-1 rounded-full text-xs ${
+                  room.status === 'open' ? 'bg-green-500/20 text-green-400' :
+                  room.status === 'in_progress' ? 'bg-yellow-500/20 text-yellow-400' :
+                  'bg-gray-500/20 text-gray-400'
+                }`}>
+                  {room.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                </span>
+                <span>•</span>
+                <span>{room.sportTitle}</span>
+                <span>•</span>
+                <span>{new Date(room.gameDate).toLocaleDateString()}</span>
               </div>
-
-              <div className="mt-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Standings</h3>
-                <div className="space-y-3">
-                  {room.participants
-                    .sort((a, b) => b.score - a.score)
-                    .map((participant, index) => (
-                      <div
-                        key={participant.id}
-                        className={`flex justify-between items-center p-3 rounded-lg ${
-                          participant.userId === session?.user?.id
-                            ? 'bg-blue-900/50 border border-blue-500'
-                            : 'bg-gray-700/50 border border-gray-600'
-                        }`}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <span className={`text-lg font-bold ${
-                            index === 0 ? 'text-yellow-400' : 
-                            index === 1 ? 'text-gray-300' : 
-                            index === 2 ? 'text-amber-600' : 
-                            'text-gray-400'
-                          }`}>{index + 1}.</span>
-                          <div>
-                            <p className="font-medium text-white">{participant.username}</p>
-                            <p className="text-sm text-gray-400">
-                              {participant.picks.length} picks
-                            </p>
-                          </div>
-                        </div>
-                        <p className="font-bold text-green-400">{participant.score} pts</p>
-                      </div>
-                    ))}
-                </div>
+            </div>
+            
+            <div className="text-right">
+              <div className="text-2xl font-bold text-green-400">
+                ${room.entryFee}
+              </div>
+              <div className="text-sm text-gray-400">Entry Fee</div>
+              <div className="text-sm text-gray-400 mt-1">
+                {room.participants.length} participant{room.participants.length !== 1 ? 's' : ''}
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Games and Picks */}
-          <div className="lg:col-span-2">
-            <div className="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-semibold text-white">Games</h3>
-                {currentUser && !hasSubmittedPicks && (
-                  <div className="text-sm text-gray-400">
-                    {Object.keys(userPicks).length} of {games.length} games selected
+        {/* Action Buttons */}
+        <div className="mb-6 flex space-x-4">
+          {canMakePicks && (
+            <button
+              onClick={handleSubmitPicks}
+              disabled={submitting || picks.some(p => !p.selectedTeam)}
+              className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+            >
+              {submitting ? 'Submitting...' : 'Submit Picks'}
+            </button>
+          )}
+          
+          {canGrade && (
+            <button
+              onClick={handleGradeResults}
+              disabled={submitting}
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+            >
+              {submitting ? 'Grading...' : 'Grade Results'}
+            </button>
+          )}
+        </div>
+
+        {/* Games Grid */}
+        <div className="grid gap-4">
+          {games.map((game) => {
+            const pick = picks.find(p => p.gameId === game.id)
+            const homeTeamOdds = game.moneyline.find(m => m.name === game.home_team)
+            const awayTeamOdds = game.moneyline.find(m => m.name === game.away_team)
+            
+            return (
+              <div
+                key={game.id}
+                className="bg-gray-800 rounded-lg p-6 border border-gray-700"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">
+                      {game.away_team} @ {game.home_team}
+                    </h3>
+                    <p className="text-sm text-gray-400">
+                      {formatTime(game.commence_time)}
+                    </p>
+                  </div>
+                  
+                  {room.status === 'completed' && (
+                    <div className="text-sm text-gray-400">
+                      Results: {game.home_team} vs {game.away_team}
+                    </div>
+                  )}
+                </div>
+
+                {/* Team Selection */}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Away Team */}
+                  <div className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+                    pick?.selectedTeam === game.away_team
+                      ? 'border-blue-500 bg-blue-500/10'
+                      : 'border-gray-600 hover:border-gray-500'
+                  }`}>
+                    <button
+                      onClick={() => handlePickSelection(game.id, game.away_team)}
+                      disabled={!canMakePicks}
+                      className="w-full text-left"
+                    >
+                      <div className="font-semibold text-white mb-1">{game.away_team}</div>
+                      {awayTeamOdds && (
+                        <div className="text-sm text-gray-400">
+                          {formatOdds(awayTeamOdds.price)}
+                        </div>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Home Team */}
+                  <div className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+                    pick?.selectedTeam === game.home_team
+                      ? 'border-blue-500 bg-blue-500/10'
+                      : 'border-gray-600 hover:border-gray-500'
+                  }`}>
+                    <button
+                      onClick={() => handlePickSelection(game.id, game.home_team)}
+                      disabled={!canMakePicks}
+                      className="w-full text-left"
+                    >
+                      <div className="font-semibold text-white mb-1">{game.home_team}</div>
+                      {homeTeamOdds && (
+                        <div className="text-sm text-gray-400">
+                          {formatOdds(homeTeamOdds.price)}
+                        </div>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Pick Status */}
+                {pick?.selectedTeam && (
+                  <div className="mt-3 text-center">
+                    <span className="text-sm text-gray-400">Your Pick: </span>
+                    <span className="text-blue-400 font-semibold">{pick.selectedTeam}</span>
                   </div>
                 )}
               </div>
-              <div className="space-y-4">
-                {games.map((game) => (
-                  <div key={game.id} className="border border-gray-700 rounded-lg overflow-hidden bg-gray-900/50">
-                    {/* Game Header */}
-                    <div className="bg-gray-800 px-4 py-2 border-b border-gray-700">
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm font-medium text-blue-400">{game.sport}</span>
-                          <span className="text-gray-600">•</span>
-                          <span className="text-sm text-gray-400">{game.league}</span>
-                        </div>
-                        <div className="text-sm text-gray-400">
-                          {new Date(game.startTime).toLocaleString()}
-                        </div>
-                      </div>
-                    </div>
+            )
+          })}
+        </div>
 
-                    {/* Teams and Selection */}
-                    <div className="p-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        {/* Home Team */}
-                        <div className={`rounded-lg p-4 transition-all duration-200 ${
-                          userPicks[game.id] === game.homeTeam
-                            ? 'bg-blue-900/50 border-2 border-blue-500'
-                            : 'bg-gray-800/50 border border-gray-700 hover:border-blue-500/50'
-                        }`}>
-                          <button
-                            onClick={() => handlePick(game.id, game.homeTeam)}
-                            disabled={!currentUser || hasSubmittedPicks}
-                            className={`w-full text-left ${
-                              !currentUser || hasSubmittedPicks ? 'cursor-not-allowed' : 'cursor-pointer'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="font-medium text-white">{game.homeTeam}</span>
-                              {userPicks[game.id] === game.homeTeam && (
-                                <span className="text-blue-400">
-                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                </span>
-                              )}
-                            </div>
-                          </button>
-                        </div>
-
-                        {/* Away Team */}
-                        <div className={`rounded-lg p-4 transition-all duration-200 ${
-                          userPicks[game.id] === game.awayTeam
-                            ? 'bg-blue-900/50 border-2 border-blue-500'
-                            : 'bg-gray-800/50 border border-gray-700 hover:border-blue-500/50'
-                        }`}>
-                          <button
-                            onClick={() => handlePick(game.id, game.awayTeam)}
-                            disabled={!currentUser || hasSubmittedPicks}
-                            className={`w-full text-left ${
-                              !currentUser || hasSubmittedPicks ? 'cursor-not-allowed' : 'cursor-pointer'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="font-medium text-white">{game.awayTeam}</span>
-                              {userPicks[game.id] === game.awayTeam && (
-                                <span className="text-blue-400">
-                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                </span>
-                              )}
-                            </div>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {currentUser && !hasSubmittedPicks && (
-                <div className="mt-6 flex justify-end">
-                  <button
-                    onClick={handleSubmitPicks}
-                    disabled={submitting || Object.keys(userPicks).length !== games.length}
-                    className={`px-6 py-3 rounded-lg font-medium text-base ${
-                      submitting || Object.keys(userPicks).length !== games.length
-                        ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                        : 'bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-500/20'
-                    } transition-all duration-200`}
-                  >
-                    {submitting ? (
-                      <div className="flex items-center space-x-2">
-                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span>Submitting...</span>
-                      </div>
-                    ) : (
-                      'Submit Picks'
-                    )}
-                  </button>
+        {/* Participants */}
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold mb-4">Participants</h2>
+          <div className="grid gap-2">
+            {room.participants.map((participant) => (
+              <div
+                key={participant.id}
+                className="flex justify-between items-center bg-gray-800 rounded-lg p-4 border border-gray-700"
+              >
+                <div className="flex items-center space-x-3">
+                  <span className="text-white font-medium">
+                    {participant.user.username}
+                  </span>
+                  {participant.user.id === room.creatorId && (
+                    <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">
+                      Creator
+                    </span>
+                  )}
                 </div>
-              )}
-            </div>
+                
+                <div className="text-right">
+                  <div className="text-lg font-semibold text-green-400">
+                    {participant.score}
+                  </div>
+                  <div className="text-sm text-gray-400">Score</div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

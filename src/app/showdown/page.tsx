@@ -12,6 +12,9 @@ interface ShowdownRoom {
   creatorId: string
   entryFee: number
   status: string
+  sport: string
+  sportTitle: string
+  gameDate: string
   createdAt: string
   updatedAt: string
   creator: {
@@ -36,6 +39,13 @@ interface Friend {
   email: string
 }
 
+const SPORTS_OPTIONS = [
+  { key: 'baseball_mlb', title: 'MLB' },
+  { key: 'americanfootball_nfl', title: 'NFL' },
+  { key: 'basketball_nba', title: 'NBA' },
+  { key: 'icehockey_nhl', title: 'NHL' }
+]
+
 export default function ShowdownPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -53,7 +63,10 @@ export default function ShowdownPage() {
   const [isInviting, setIsInviting] = useState(false)
   const [newRoomData, setNewRoomData] = useState({
     name: '',
-    entryFee: 0
+    entryFee: 0,
+    sport: 'baseball_mlb',
+    sportTitle: 'MLB',
+    gameDate: new Date().toISOString().split('T')[0]
   })
 
   useEffect(() => {
@@ -103,9 +116,11 @@ export default function ShowdownPage() {
     }
   }, [status, statusFilter])
 
-  const handleCreateShowdown = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!session?.user) return
+  const handleCreateRoom = async () => {
+    if (!newRoomData.name || newRoomData.entryFee <= 0) {
+      toast.error('Please fill in all required fields')
+      return
+    }
 
     try {
       setIsCreating(true)
@@ -118,29 +133,60 @@ export default function ShowdownPage() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to create showdown')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create room')
       }
 
-      const room = await response.json()
-      setRooms(prev => [room, ...prev])
+      const newRoom = await response.json()
+      toast.success('Showdown room created successfully!')
       setIsCreateModalOpen(false)
-      setNewRoomData({ name: '', entryFee: 0 })
-      toast.success('Showdown created successfully!')
+      setNewRoomData({
+        name: '',
+        entryFee: 0,
+        sport: 'baseball_mlb',
+        sportTitle: 'MLB',
+        gameDate: new Date().toISOString().split('T')[0]
+      })
+      fetchData()
     } catch (err) {
-      console.error('Error creating showdown:', err)
-      setError('Failed to create showdown')
-      toast.error('Failed to create showdown')
+      console.error('Error creating room:', err)
+      toast.error(err instanceof Error ? err.message : 'Failed to create room')
     } finally {
       setIsCreating(false)
     }
   }
 
+  const handleJoinRoom = async (roomId: string) => {
+    try {
+      setIsJoining(roomId)
+      const response = await fetch(`/api/showdown/rooms/${roomId}/join`, {
+        method: 'POST',
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to join room')
+      }
+
+      toast.success('Successfully joined the showdown!')
+      fetchData()
+    } catch (err) {
+      console.error('Error joining room:', err)
+      toast.error(err instanceof Error ? err.message : 'Failed to join room')
+    } finally {
+      setIsJoining(null)
+    }
+  }
+
   const handleInviteFriends = async () => {
-    if (!selectedRoom || selectedFriends.length === 0) return
+    if (selectedFriends.length === 0) {
+      toast.error('Please select friends to invite')
+      return
+    }
 
     try {
       setIsInviting(true)
-      const response = await fetch(`/api/showdown/rooms/${selectedRoom.id}/invite`, {
+      const response = await fetch(`/api/showdown/rooms/${selectedRoom?.id}/invite`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -149,304 +195,302 @@ export default function ShowdownPage() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to send invites')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to invite friends')
       }
 
-      const result = await response.json()
+      toast.success('Friends invited successfully!')
       setIsInviteModalOpen(false)
-      setSelectedRoom(null)
       setSelectedFriends([])
-      toast.success(result.message)
+      setSelectedRoom(null)
+      fetchData()
     } catch (err) {
-      console.error('Error sending invites:', err)
-      toast.error('Failed to send invites')
+      console.error('Error inviting friends:', err)
+      toast.error(err instanceof Error ? err.message : 'Failed to invite friends')
     } finally {
       setIsInviting(false)
     }
   }
 
-  const handleJoinShowdown = async (roomId: string) => {
-    if (!session?.user) return
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    })
+  }
 
-    try {
-      setIsJoining(roomId)
-      const response = await fetch(`/api/showdown/rooms/${roomId}/join`, {
-        method: 'POST',
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to join showdown')
-      }
-
-      await fetchData()
-      toast.success('Successfully joined the showdown!')
-    } catch (err) {
-      console.error('Error joining showdown:', err)
-      setError('Failed to join showdown')
-      toast.error('Failed to join showdown')
-    } finally {
-      setIsJoining(null)
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'open':
+        return 'text-green-400'
+      case 'in_progress':
+        return 'text-yellow-400'
+      case 'completed':
+        return 'text-gray-400'
+      default:
+        return 'text-gray-400'
     }
   }
 
-  const openInviteModal = (room: ShowdownRoom) => {
-    setSelectedRoom(room)
-    setSelectedFriends([])
-    setIsInviteModalOpen(true)
-  }
-
-  if (status === 'loading' || loading) {
+  if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col items-center justify-center h-[60vh]">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent"></div>
-            <p className="mt-4 text-xl text-gray-300">Loading showdowns...</p>
-          </div>
-        </div>
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
       </div>
     )
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col items-center justify-center h-[60vh]">
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6 text-center">
-              <svg className="w-12 h-12 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              <p className="text-red-500 text-lg font-medium mb-2">{error}</p>
-              <button
-                onClick={fetchData}
-                className="mt-4 px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-              >
-                Try Again
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+  if (status === 'unauthenticated') {
+    return null
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gray-900 text-white p-4">
+      <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-white">Showdown</h1>
+          <h1 className="text-3xl font-bold">Daily Showdown</h1>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
           >
-            Create Showdown
+            + Create Showdown
           </button>
         </div>
 
         {/* Status Filter */}
         <div className="mb-6">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
-          >
-            <option value="all">All Status</option>
-            <option value="open">Open</option>
-            <option value="in_progress">In Progress</option>
-            <option value="completed">Completed</option>
-          </select>
+          <div className="flex space-x-2">
+            {['all', 'open', 'in_progress', 'completed'].map((filter) => (
+              <button
+                key={filter}
+                onClick={() => setStatusFilter(filter)}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  statusFilter === filter
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                {filter === 'all' ? 'All' : filter.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Showdowns Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {rooms.map((room) => (
-            <div
-              key={room.id}
-              className="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700 hover:border-blue-500 transition-colors"
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-xl font-semibold text-white">{room.name}</h3>
-                  <p className="text-gray-400">Created by {room.creator.username}</p>
+        {/* Rooms List */}
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="text-gray-400">Loading showdowns...</div>
+          </div>
+        ) : error ? (
+          <div className="text-center py-8">
+            <div className="text-red-400">Error: {error}</div>
+          </div>
+        ) : rooms.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="text-gray-400">No showdowns found</div>
+          </div>
+        ) : (
+          <div className="grid gap-4">
+            {rooms.map((room) => (
+              <div
+                key={room.id}
+                className="bg-gray-800 rounded-lg p-6 border border-gray-700"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-xl font-semibold mb-2">{room.name}</h3>
+                    <div className="flex items-center space-x-4 text-sm text-gray-400">
+                      <span>Created by {room.creator.username}</span>
+                      <span>•</span>
+                      <span className={getStatusColor(room.status)}>
+                        {room.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </span>
+                      <span>•</span>
+                      <span>{room.sportTitle}</span>
+                      <span>•</span>
+                      <span>{formatDate(room.gameDate)}</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-green-400">
+                      ${room.entryFee}
+                    </div>
+                    <div className="text-sm text-gray-400">
+                      Entry Fee
+                    </div>
+                  </div>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  room.status === 'open' ? 'bg-green-500/20 text-green-400' :
-                  room.status === 'in_progress' ? 'bg-blue-500/20 text-blue-400' :
-                  'bg-gray-500/20 text-gray-400'
-                }`}>
-                  {room.status.replace('_', ' ')}
-                </span>
-              </div>
-              <div className="space-y-2 mb-4">
-                <p className="text-gray-300">Entry Fee: <span className="text-green-400">${room.entryFee}</span></p>
-                <p className="text-gray-300">Participants: <span className="text-white">{room.participants.length}</span></p>
-              </div>
-              <div className="flex gap-2">
-                {room.status === 'open' && !room.participants.some(p => p.user.id === session?.user?.id) && (
-                  <button
-                    onClick={() => handleJoinShowdown(room.id)}
-                    disabled={isJoining === room.id}
-                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {isJoining === room.id ? 'Joining...' : 'Join Showdown'}
-                  </button>
-                )}
-                {room.creatorId === session?.user?.id && room.status === 'open' && (
-                  <button
-                    onClick={() => openInviteModal(room)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Invite Friends
-                  </button>
-                )}
-                {room.participants.some(p => p.user.id === session?.user?.id) && (
-                  <button
-                    onClick={() => router.push(`/showdown/room/${room.id}`)}
-                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                  >
-                    View Showdown
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
 
-        {rooms.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-400 text-lg">
-              {statusFilter === 'all' ? 'No showdowns available.' : `No ${statusFilter} showdowns available.`}
-            </p>
-            <p className="text-gray-500 mt-2">Create a showdown to get started!</p>
+                <div className="flex justify-between items-center">
+                  <div className="text-sm text-gray-400">
+                    {room.participants.length} participant{room.participants.length !== 1 ? 's' : ''}
+                  </div>
+                  <div className="flex space-x-2">
+                    {room.status === 'open' && room.creatorId !== session?.user?.id && (
+                      <button
+                        onClick={() => handleJoinRoom(room.id)}
+                        disabled={isJoining === room.id}
+                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
+                      >
+                        {isJoining === room.id ? 'Joining...' : 'Join'}
+                      </button>
+                    )}
+                    {room.creatorId === session?.user?.id && room.status === 'open' && (
+                      <button
+                        onClick={() => {
+                          setSelectedRoom(room)
+                          setIsInviteModalOpen(true)
+                        }}
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+                      >
+                        Invite Friends
+                      </button>
+                    )}
+                    {room.status === 'open' && (
+                      <button
+                        onClick={() => router.push(`/showdown/room/${room.id}`)}
+                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+                      >
+                        View Details
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
-        {/* Create Showdown Modal */}
+        {/* Create Room Modal */}
         {isCreateModalOpen && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-gray-800 rounded-xl p-6 w-full max-w-md">
-              <h2 className="text-2xl font-bold text-white mb-4">Create Showdown</h2>
-              <form onSubmit={handleCreateShowdown}>
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1">
-                      Showdown Name
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      value={newRoomData.name}
-                      onChange={(e) => setNewRoomData(prev => ({ ...prev, name: e.target.value }))}
-                      className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                      placeholder="Enter showdown name"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="entryFee" className="block text-sm font-medium text-gray-300 mb-1">
-                      Entry Fee ($)
-                    </label>
-                    <input
-                      type="number"
-                      id="entryFee"
-                      value={newRoomData.entryFee}
-                      onChange={(e) => setNewRoomData(prev => ({ ...prev, entryFee: Number(e.target.value) }))}
-                      className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                      placeholder="Enter entry fee"
-                      min="0"
-                      step="0.01"
-                      required
-                    />
-                  </div>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
+              <h2 className="text-xl font-semibold mb-4">Create Daily Showdown</h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Room Name
+                  </label>
+                  <input
+                    type="text"
+                    value={newRoomData.name}
+                    onChange={(e) => setNewRoomData({ ...newRoomData, name: e.target.value })}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                    placeholder="Enter room name"
+                  />
                 </div>
-                <div className="mt-6 flex justify-end space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsCreateModalOpen(false)}
-                    className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Sport
+                  </label>
+                  <select
+                    value={newRoomData.sport}
+                    onChange={(e) => {
+                      const sport = e.target.value
+                      const sportTitle = SPORTS_OPTIONS.find(s => s.key === sport)?.title || 'MLB'
+                      setNewRoomData({ ...newRoomData, sport, sportTitle })
+                    }}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
                   >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isCreating}
-                    className={`px-4 py-2 rounded-lg font-medium ${
-                      isCreating
-                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                        : 'bg-blue-500 text-white hover:bg-blue-600'
-                    }`}
-                  >
-                    {isCreating ? 'Creating...' : 'Create Showdown'}
-                  </button>
+                    {SPORTS_OPTIONS.map((sport) => (
+                      <option key={sport.key} value={sport.key}>
+                        {sport.title}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              </form>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Game Date
+                  </label>
+                  <input
+                    type="date"
+                    value={newRoomData.gameDate}
+                    onChange={(e) => setNewRoomData({ ...newRoomData, gameDate: e.target.value })}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Entry Fee
+                  </label>
+                  <input
+                    type="number"
+                    value={newRoomData.entryFee}
+                    onChange={(e) => setNewRoomData({ ...newRoomData, entryFee: Number(e.target.value) })}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+              </div>
+
+              <div className="flex space-x-3 mt-6">
+                <button
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateRoom}
+                  disabled={isCreating}
+                  className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  {isCreating ? 'Creating...' : 'Create Room'}
+                </button>
+              </div>
             </div>
           </div>
         )}
 
         {/* Invite Friends Modal */}
         {isInviteModalOpen && selectedRoom && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-gray-800 rounded-xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
-              <h2 className="text-2xl font-bold text-white mb-4">
-                Invite Friends to "{selectedRoom.name}"
-              </h2>
-              <p className="text-gray-400 mb-4">
-                Selected friends will receive a notification and can accept or decline your invitation.
-              </p>
-              {friends.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-400 mb-4">You don't have any friends yet.</p>
-                  <button
-                    onClick={() => router.push('/social')}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                  >
-                    Add Friends
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-2 mb-4">
-                    {friends.map((friend) => (
-                      <label key={friend.id} className="flex items-center space-x-3 p-3 bg-gray-700 rounded-lg hover:bg-gray-600 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedFriends.includes(friend.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedFriends(prev => [...prev, friend.id])
-                            } else {
-                              setSelectedFriends(prev => prev.filter(id => id !== friend.id))
-                            }
-                          }}
-                          className="w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
-                        />
-                        <span className="text-white">{friend.username}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <div className="flex justify-end space-x-3">
-                    <button
-                      onClick={() => setIsInviteModalOpen(false)}
-                      className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleInviteFriends}
-                      disabled={selectedFriends.length === 0 || isInviting}
-                      className={`px-4 py-2 rounded-lg font-medium ${
-                        selectedFriends.length === 0 || isInviting
-                          ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                          : 'bg-blue-500 text-white hover:bg-blue-600'
-                      }`}
-                    >
-                      {isInviting ? 'Sending...' : `Send Invites (${selectedFriends.length})`}
-                    </button>
-                  </div>
-                </>
-              )}
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
+              <h2 className="text-xl font-semibold mb-4">Invite Friends to {selectedRoom.name}</h2>
+              
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {friends.map((friend) => (
+                  <label key={friend.id} className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedFriends.includes(friend.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedFriends([...selectedFriends, friend.id])
+                        } else {
+                          setSelectedFriends(selectedFriends.filter(id => id !== friend.id))
+                        }
+                      }}
+                      className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-white">{friend.username}</span>
+                  </label>
+                ))}
+              </div>
+
+              <div className="flex space-x-3 mt-6">
+                <button
+                  onClick={() => setIsInviteModalOpen(false)}
+                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleInviteFriends}
+                  disabled={isInviting}
+                  className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  {isInviting ? 'Inviting...' : 'Send Invites'}
+                </button>
+              </div>
             </div>
           </div>
         )}
