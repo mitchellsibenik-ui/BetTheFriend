@@ -367,6 +367,7 @@ export default function Navigation() {
             className="md:hidden fixed inset-0 z-50 bg-gray-900"
             onClick={(e) => {
               // Close menu when clicking on backdrop
+              console.log('Mobile menu backdrop clicked, closing menu')
               if (e.target === e.currentTarget) {
                 setIsMobileMenuOpen(false)
               }
@@ -377,7 +378,10 @@ export default function Navigation() {
               <div className="flex items-center justify-between p-4 border-b border-gray-700">
                 <div className="text-white font-bold text-lg">Menu</div>
                 <button
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={() => {
+                    console.log('Close button clicked, closing mobile menu')
+                    setIsMobileMenuOpen(false)
+                  }}
                   className="p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700"
                 >
                   <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
