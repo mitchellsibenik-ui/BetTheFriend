@@ -20,6 +20,7 @@ interface ChatNotificationContextType {
   showNotification: (notification: ChatNotificationData) => void
   markAsRead: (roomId: string) => void
   openChat: (roomId: string) => void
+  setOpenChatCallback: (callback: (roomId: string) => void) => void
 }
 
 const ChatNotificationContext = createContext<ChatNotificationContextType | undefined>(undefined)
@@ -125,7 +126,8 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
         unreadCounts,
         showNotification,
         markAsRead,
-        openChat
+        openChat,
+        setOpenChatCallback
       }}
     >
       {children}
@@ -148,7 +150,12 @@ export function useChatNotifications() {
 
 // Hook to set the chat opening callback
 export function useSetChatCallback(callback: (roomId: string) => void) {
-  const { setOpenChatCallback } = useContext(ChatNotificationContext) as any
+  const context = useContext(ChatNotificationContext)
+  if (context === undefined) {
+    throw new Error('useSetChatCallback must be used within a ChatNotificationProvider')
+  }
+  const { setOpenChatCallback } = context
+  
   useEffect(() => {
     setOpenChatCallback(() => callback)
   }, [callback, setOpenChatCallback])
