@@ -1028,4 +1028,3 @@ export default function SocialPage() {
     </div>
   )
 }
- 
