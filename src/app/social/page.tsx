@@ -188,9 +188,10 @@ export default function SocialPage() {
 
   // Helper function to get unread count for a friend
   const getUnreadCount = (friendId: string) => {
-    // This is a simplified approach - in a real app you'd want to store room-to-friend mapping
-    // For now, we'll just return the total unread count
-    return Object.values(unreadCounts).reduce((sum, count) => sum + count, 0)
+    // Find the room ID for this friend by looking through unreadCounts
+    // The room ID format should be consistent with how we create rooms
+    const roomId = `room_${[session?.user?.id, friendId].sort().join('_')}`
+    return unreadCounts[roomId] || 0
   }
 
   const closeChat = () => {
@@ -387,21 +388,37 @@ export default function SocialPage() {
               <p className="text-gray-400 text-xs sm:text-sm mt-0.5 sm:mt-1">
                 Connect, compete, and create wagers
               </p>
-              <button
-                onClick={() => {
-                  console.log('Testing notification...')
-                  showNotification({
-                    id: 'test-123',
-                    sender: { id: 'test', username: 'Test User' },
-                    message: 'This is a test notification to see if the system works!',
-                    roomId: 'test-room',
-                    timestamp: new Date()
-                  })
-                }}
-                className="mt-2 px-3 py-1 bg-blue-600 text-white rounded text-xs"
-              >
-                Test Notification
-              </button>
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={() => {
+                    console.log('Testing notification...')
+                    showNotification({
+                      id: 'test-123',
+                      sender: { id: 'test', username: 'Test User' },
+                      message: 'This is a test notification to see if the system works!',
+                      roomId: 'test-room',
+                      timestamp: new Date()
+                    })
+                  }}
+                  className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
+                >
+                  Test Notification
+                </button>
+                <button
+                  onClick={() => {
+                    console.log('Testing unread count...')
+                    // Simulate adding unread messages for the first friend
+                    if (friends.length > 0) {
+                      const roomId = `room_${[session?.user?.id, friends[0].id].sort().join('_')}`
+                      console.log('Simulating unread for room:', roomId)
+                      // This will be handled by the polling system
+                    }
+                  }}
+                  className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
+                >
+                  Test Unread Badge
+                </button>
+              </div>
             </div>
             
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
@@ -613,8 +630,13 @@ export default function SocialPage() {
                             {friend.username.charAt(0).toUpperCase()}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <div className="text-white font-semibold text-base truncate group-hover:text-blue-300 transition-colors duration-200">
-                              {friend.username}
+                            <div className="flex items-center space-x-2">
+                              <div className="text-white font-semibold text-base truncate group-hover:text-blue-300 transition-colors duration-200">
+                                {friend.username}
+                              </div>
+                              {getUnreadCount(friend.id) > 0 && (
+                                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" title={`${getUnreadCount(friend.id)} unread messages`}></div>
+                              )}
                             </div>
                             <div className="text-xs text-gray-400">
                               Since {new Date(friend.createdAt).toLocaleDateString()}
@@ -712,6 +734,10 @@ export default function SocialPage() {
                               <div className="text-white font-semibold text-base truncate">
                                 {friend.username}
                               </div>
+                              {getUnreadCount(friend.id) > 0 && (
+                                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" title={`${getUnreadCount(friend.id)} unread messages`}></div>
+                              )}
+                            </div>
                               <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                                 index === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-yellow-900' :
                                 index === 1 ? 'bg-gradient-to-r from-gray-300 to-gray-500 text-gray-800' :
