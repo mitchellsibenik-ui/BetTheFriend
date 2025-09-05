@@ -388,37 +388,6 @@ export default function SocialPage() {
               <p className="text-gray-400 text-xs sm:text-sm mt-0.5 sm:mt-1">
                 Connect, compete, and create wagers
               </p>
-              <div className="flex gap-2 mt-2">
-                <button
-                  onClick={() => {
-                    console.log('Testing notification...')
-                    showNotification({
-                      id: 'test-123',
-                      sender: { id: 'test', username: 'Test User' },
-                      message: 'This is a test notification to see if the system works!',
-                      roomId: 'test-room',
-                      timestamp: new Date()
-                    })
-                  }}
-                  className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
-                >
-                  Test Notification
-                </button>
-                <button
-                  onClick={() => {
-                    console.log('Testing unread count...')
-                    // Simulate adding unread messages for the first friend
-                    if (friends.length > 0) {
-                      const roomId = `room_${[session?.user?.id, friends[0].id].sort().join('_')}`
-                      console.log('Simulating unread for room:', roomId)
-                      // This will be handled by the polling system
-                    }
-                  }}
-                  className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
-                >
-                  Test Unread Badge
-                </button>
-              </div>
             </div>
             
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
