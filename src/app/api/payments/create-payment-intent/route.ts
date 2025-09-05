@@ -44,6 +44,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Check if Stripe is available
+    if (!stripe) {
+      return NextResponse.json(
+        { error: 'Payment processing is not available at this time' },
+        { status: 503 }
+      )
+    }
+
     // Create payment intent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100), // Convert to cents

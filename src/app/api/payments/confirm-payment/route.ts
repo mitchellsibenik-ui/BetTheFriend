@@ -20,6 +20,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check if Stripe is available
+    if (!stripe) {
+      return NextResponse.json(
+        { error: 'Payment processing is not available at this time' },
+        { status: 503 }
+      )
+    }
+
     // Retrieve payment intent from Stripe
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
 

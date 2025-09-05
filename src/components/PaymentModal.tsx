@@ -6,7 +6,9 @@ import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY 
+  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+  : null
 
 interface PaymentModalProps {
   isOpen: boolean
@@ -139,6 +141,36 @@ function PaymentForm({ type, onSuccess, onClose }: Omit<PaymentModalProps, 'isOp
 
 export default function PaymentModal({ isOpen, onClose, type, onSuccess }: PaymentModalProps) {
   if (!isOpen) return null
+
+  // Check if Stripe is available
+  if (!stripePromise) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 w-full max-w-md mx-4 border border-white/20">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-white">
+              {type === 'deposit' ? 'Add Funds' : 'Withdraw Funds'}
+            </h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              <XMarkIcon className="w-6 h-6" />
+            </button>
+          </div>
+
+          <div className="text-center py-8">
+            <p className="text-gray-300 mb-4">
+              Payment processing is not available at this time.
+            </p>
+            <p className="text-sm text-gray-400">
+              Please check back later or contact support.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
