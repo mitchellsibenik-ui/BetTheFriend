@@ -317,10 +317,7 @@ export default function Navigation() {
             
             {/* Mobile Menu Button */}
             <button
-              onClick={() => {
-                console.log('Toggling mobile menu, current state:', isMobileMenuOpen)
-                setIsMobileMenuOpen(!isMobileMenuOpen)
-              }}
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none"
             >
               <span className="sr-only">Open main menu</span>
@@ -367,7 +364,6 @@ export default function Navigation() {
             className="md:hidden fixed inset-0 z-50 bg-gray-900"
             onClick={(e) => {
               // Close menu when clicking on backdrop
-              console.log('Mobile menu backdrop clicked, closing menu')
               if (e.target === e.currentTarget) {
                 setIsMobileMenuOpen(false)
               }
@@ -378,10 +374,7 @@ export default function Navigation() {
               <div className="flex items-center justify-between p-4 border-b border-gray-700">
                 <div className="text-white font-bold text-lg">Menu</div>
                 <button
-                  onClick={() => {
-                    console.log('Close button clicked, closing mobile menu')
-                    setIsMobileMenuOpen(false)
-                  }}
+                  onClick={() => setIsMobileMenuOpen(false)}
                   className="p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700"
                 >
                   <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -408,10 +401,7 @@ export default function Navigation() {
                       ? 'bg-gray-800 text-white'
                       : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                   } block px-4 py-3 rounded-lg text-lg font-medium transition-colors duration-200`}
-                  onClick={() => {
-                    console.log('Closing mobile menu and navigating to sportsbook')
-                    setIsMobileMenuOpen(false)
-                  }}
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Sportsbook
                 </Link>
@@ -422,10 +412,7 @@ export default function Navigation() {
                       ? 'bg-gray-800 text-white'
                       : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                   } block px-4 py-3 rounded-lg text-lg font-medium transition-colors duration-200`}
-                  onClick={() => {
-                    console.log('Closing mobile menu and navigating to showdown')
-                    setIsMobileMenuOpen(false)
-                  }}
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Showdown
                 </Link>
@@ -436,10 +423,7 @@ export default function Navigation() {
                       ? 'bg-gray-800 text-white'
                       : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                   } block px-4 py-3 rounded-lg text-lg font-medium transition-colors duration-200`}
-                  onClick={() => {
-                    console.log('Closing mobile menu and navigating to my-bets')
-                    setIsMobileMenuOpen(false)
-                  }}
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   My Bets
                 </Link>
