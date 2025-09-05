@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { useState, useEffect } from 'react'
 import { Users } from 'lucide-react'
+import BalanceDisplay from './BalanceDisplay'
 
 export default function Navigation() {
   const { data: session, status } = useSession()
@@ -13,6 +14,37 @@ export default function Navigation() {
   const [notificationCount, setNotificationCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [userBalance, setUserBalance] = useState<number | null>(null)
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isMobileMenuOpen])
+
+  // Handle escape key to close mobile menu
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isMobileMenuOpen) {
+        setIsMobileMenuOpen(false)
+      }
+    }
+
+    if (isMobileMenuOpen) {
+      document.addEventListener('keydown', handleEscape)
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [isMobileMenuOpen])
 
   const fetchNotificationCount = async () => {
     if (status !== 'authenticated') return
@@ -156,18 +188,18 @@ export default function Navigation() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:block">
-            <div className="ml-10 flex items-baseline space-x-4">
-              <Link
-                href="/sportsbook"
+              <div className="ml-10 flex items-baseline space-x-4">
+                <Link
+                  href="/sportsbook"
                 className={`${
-                  pathname === '/sportsbook'
+                    pathname === '/sportsbook'
                     ? 'bg-gray-800 text-white'
-                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                 } px-3 py-2 rounded-md text-sm font-medium`}
-              >
-                Sportsbook
-              </Link>
-              <Link
+                >
+                  Sportsbook
+                </Link>
+                <Link
                 href="/showdown"
                 className={`${
                   pathname === '/showdown'
@@ -176,17 +208,17 @@ export default function Navigation() {
                 } px-3 py-2 rounded-md text-sm font-medium`}
               >
                 Showdown
-              </Link>
-              <Link
-                href="/my-bets"
+                </Link>
+                <Link
+                  href="/my-bets"
                 className={`${
-                  pathname === '/my-bets'
+                    pathname === '/my-bets'
                     ? 'bg-gray-800 text-white'
-                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                 } px-3 py-2 rounded-md text-sm font-medium`}
-              >
-                My Bets
-              </Link>
+                >
+                  My Bets
+                </Link>
               <Link
                 href="/social"
                 className={`${
@@ -197,7 +229,7 @@ export default function Navigation() {
               >
                 Friends
               </Link>
-            </div>
+              </div>
           </div>
 
           {/* Desktop User Info */}
@@ -227,9 +259,13 @@ export default function Navigation() {
                     </span>
                   )}
                 </Link>
-                <div className="ml-4 flex items-center">
-                  <span className="text-gray-300 mr-2">{session?.user?.username}</span>
-                  <span className="text-green-400 font-semibold mr-4">${userBalance?.toFixed(2) || '0.00'}</span>
+                <div className="ml-4 flex items-center gap-4">
+                  <span className="text-gray-300">{session?.user?.username}</span>
+                  <BalanceDisplay 
+                    balance={userBalance || 0} 
+                    showPaymentButtons={false}
+                    onBalanceUpdate={setUserBalance}
+                  />
                   <button
                     onClick={handleLogout}
                     className="px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
@@ -246,9 +282,11 @@ export default function Navigation() {
             {status === 'authenticated' && (
               <>
                 {/* Mobile Balance Display */}
-                <span className="text-green-400 font-semibold text-sm">
-                  ${userBalance?.toFixed(2) || '0.00'}
-                </span>
+                <BalanceDisplay 
+                  balance={userBalance || 0} 
+                  showPaymentButtons={false}
+                  onBalanceUpdate={setUserBalance}
+                />
                 
                 {/* Mobile Notifications */}
                 <Link
@@ -320,94 +358,118 @@ export default function Navigation() {
           </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu - Full Screen Overlay */}
         {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-700">
-            <div className="px-2 pt-2 pb-3 space-y-1">
-              {/* User Info at Top */}
-              {status === 'authenticated' && (
-                <div className="px-3 py-2 border-b border-gray-700 mb-2">
-                  <div className="text-white font-medium">{session?.user?.username}</div>
-                  <div className="text-green-400 text-sm">Balance: ${userBalance?.toFixed(2) || '0.00'}</div>
-                </div>
-              )}
+          <div 
+            className="md:hidden fixed inset-0 z-50 bg-gray-900"
+            onClick={(e) => {
+              // Close menu when clicking on backdrop
+              if (e.target === e.currentTarget) {
+                setIsMobileMenuOpen(false)
+              }
+            }}
+          >
+            <div className="flex flex-col h-full">
+              {/* Header with close button */}
+              <div className="flex items-center justify-between p-4 border-b border-gray-700">
+                <div className="text-white font-bold text-lg">Menu</div>
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700"
+                >
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
               
-              {/* Navigation Links */}
-              <Link
-                href="/sportsbook"
-                className={`${
-                  pathname === '/sportsbook'
-                    ? 'bg-gray-800 text-white'
-                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                } block px-3 py-2 rounded-md text-base font-medium`}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Sportsbook
-              </Link>
-              <Link
-                href="/showdown"
-                className={`${
-                  pathname === '/showdown'
-                    ? 'bg-gray-800 text-white'
-                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                } block px-3 py-2 rounded-md text-base font-medium`}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Showdown
-              </Link>
-              <Link
-                href="/my-bets"
-                className={`${
-                  pathname === '/my-bets'
-                    ? 'bg-gray-800 text-white'
-                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                } block px-3 py-2 rounded-md text-base font-medium`}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                My Bets
-              </Link>
-              <Link
-                href="/social"
-                className={`${
-                  pathname === '/social'
-                    ? 'bg-gray-800 text-white'
-                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                } block px-3 py-2 rounded-md text-base font-medium`}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Friends
-              </Link>
-              <Link
-                href="/notifications"
-                className={`${
-                  pathname === '/notifications'
-                    ? 'bg-gray-800 text-white'
-                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                } block px-3 py-2 rounded-md text-base font-medium relative`}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Notifications
-                {notificationCount > 0 && (
-                  <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
-                    {notificationCount}
-                  </span>
+              {/* Menu Content */}
+              <div className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+                {/* User Info at Top */}
+                {status === 'authenticated' && (
+                  <div className="px-3 py-4 border-b border-gray-700 mb-4">
+                    <div className="text-white font-medium text-lg">{session?.user?.username}</div>
+                    <div className="text-green-400 text-base">Balance: ${userBalance?.toFixed(2) || '0.00'}</div>
+                  </div>
                 )}
-              </Link>
-              
-              {/* Mobile Actions */}
-              {status === 'authenticated' && (
-                <>
-                  <button
-                    onClick={() => {
-                      handleLogout()
-                      setIsMobileMenuOpen(false)
-                    }}
-                    className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium w-full text-left border-t border-gray-700 mt-2 pt-2"
-                  >
-                    Logout
-                  </button>
-                </>
-              )}
+                
+                {/* Navigation Links */}
+                <Link
+                  href="/sportsbook"
+                  className={`${
+                    pathname === '/sportsbook'
+                      ? 'bg-gray-800 text-white'
+                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                  } block px-4 py-3 rounded-lg text-lg font-medium transition-colors duration-200`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Sportsbook
+                </Link>
+                <Link
+                  href="/showdown"
+                  className={`${
+                    pathname === '/showdown'
+                      ? 'bg-gray-800 text-white'
+                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                  } block px-4 py-3 rounded-lg text-lg font-medium transition-colors duration-200`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Showdown
+                </Link>
+                <Link
+                  href="/my-bets"
+                  className={`${
+                    pathname === '/my-bets'
+                      ? 'bg-gray-800 text-white'
+                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                  } block px-4 py-3 rounded-lg text-lg font-medium transition-colors duration-200`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  My Bets
+                </Link>
+                <Link
+                  href="/social"
+                  className={`${
+                    pathname === '/social'
+                      ? 'bg-gray-800 text-white'
+                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                  } block px-4 py-3 rounded-lg text-lg font-medium transition-colors duration-200`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Friends
+                </Link>
+                <Link
+                  href="/notifications"
+                  className={`${
+                    pathname === '/notifications'
+                      ? 'bg-gray-800 text-white'
+                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                  } block px-4 py-3 rounded-lg text-lg font-medium transition-colors duration-200 relative`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Notifications
+                  {notificationCount > 0 && (
+                    <span className="ml-3 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                      {notificationCount}
+                    </span>
+                  )}
+                </Link>
+                
+                {/* Mobile Actions */}
+                {status === 'authenticated' && (
+                  <div className="mt-8 pt-4 border-t border-gray-700">
+                    <button
+                      onClick={() => {
+                        handleLogout()
+                        setIsMobileMenuOpen(false)
+                      }}
+                      className="text-gray-300 hover:text-white block px-4 py-3 rounded-lg text-lg font-medium w-full text-left transition-colors duration-200"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

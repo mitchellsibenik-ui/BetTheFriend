@@ -8,6 +8,7 @@ import { Event as ApiEventType } from '@/lib/api/odds'
 import { toast } from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 import { Tab } from '@headlessui/react'
+import SkeletonLoader from '@/components/SkeletonLoader'
 import BetModal from '@/components/BetModal'
 import { formatOdds } from '@/lib/utils/odds'
 
@@ -247,149 +248,39 @@ export default function SportsbookPage() {
   }
 
   const formatTeamName = (fullName: string) => {
-    const teamAbbreviations: { [key: string]: string } = {
-      'New York': 'NY',
-      'Los Angeles': 'LAA',
-      'St. Louis': 'STL',
-      'San Francisco': 'SF',
-      'San Diego': 'SD',
-      'Tampa Bay': 'TB',
-      'Kansas City': 'KC',
-      'Las Vegas': 'LV',
-      'Oklahoma City': 'OKC',
-      'Golden State': 'GSW',
-      'Milwaukee': 'MIL',
-      'Minnesota': 'MIN',
-      'Phoenix': 'PHX',
-      'Portland': 'POR',
-      'Sacramento': 'SAC',
-      'Utah': 'UTA',
-      'Washington': 'WSH',
-      'Boston': 'BOS',
-      'Chicago': 'CHI',
-      'Cleveland': 'CLE',
-      'Dallas': 'DAL',
-      'Denver': 'DEN',
-      'Detroit': 'DET',
-      'Houston': 'HOU',
-      'Indiana': 'IND',
-      'Memphis': 'MEM',
-      'Miami': 'MIA',
-      'New Orleans': 'NO',
-      'Orlando': 'ORL',
-      'Philadelphia': 'PHI',
-      'Toronto': 'TOR',
-      'Atlanta': 'ATL',
-      'Brooklyn': 'BKN',
-      'Charlotte': 'CHA',
-      'Buffalo': 'BUF',
-      'Carolina': 'CAR',
-      'Columbus': 'CBJ',
-      'New Jersey': 'NJ',
-      'Pittsburgh': 'PIT',
-      'Seattle': 'SEA',
-      'Vancouver': 'VAN',
-      'Winnipeg': 'WPG',
-      'Anaheim': 'ANA',
-      'Arizona': 'ARI',
-      'Calgary': 'CGY',
-      'Edmonton': 'EDM',
-      'Montreal': 'MTL',
-      'Nashville': 'NSH',
-      'Ottawa': 'OTT',
-      'San Jose': 'SJ',
-      'Vegas': 'VGK'
-    }
+    // Handle specific team names first
+    if (fullName.includes('Los Angeles Chargers')) return 'LAC Chargers'
+    if (fullName.includes('Los Angeles Rams')) return 'LAR Rams'
+    if (fullName.includes('Los Angeles Lakers')) return 'LAL Lakers'
+    if (fullName.includes('Los Angeles Clippers')) return 'LAC Clippers'
+    if (fullName.includes('Los Angeles Dodgers')) return 'LAD Dodgers'
+    if (fullName.includes('Los Angeles Angels')) return 'LAA Angels'
+    if (fullName.includes('Los Angeles Kings')) return 'LAK Kings'
+    if (fullName.includes('New York Jets')) return 'NYJ Jets'
+    if (fullName.includes('New York Giants')) return 'NYG Giants'
+    if (fullName.includes('New York Yankees')) return 'NYY Yankees'
+    if (fullName.includes('New York Mets')) return 'NYM Mets'
+    if (fullName.includes('New York Knicks')) return 'NYK Knicks'
+    if (fullName.includes('New York Rangers')) return 'NYR Rangers'
+    if (fullName.includes('New York Islanders')) return 'NYI Islanders'
+    if (fullName.includes('Golden State')) return 'GSW Warriors'
+    if (fullName.includes('Tampa Bay')) return 'TB Rays'
+    if (fullName.includes('Green Bay')) return 'GB Packers'
+    if (fullName.includes('Las Vegas')) return 'LV Raiders'
+    if (fullName.includes('Kansas City')) return 'KC Chiefs'
+    if (fullName.includes('San Francisco')) return 'SF 49ers'
+    if (fullName.includes('San Diego')) return 'SD Padres'
+    if (fullName.includes('San Antonio')) return 'SA Spurs'
+    if (fullName.includes('San Jose')) return 'SJ Sharks'
+    if (fullName.includes('New Orleans')) return 'NO Saints'
+    if (fullName.includes('Oklahoma City')) return 'OKC Thunder'
 
-    // Handle special cases for Los Angeles teams
-    if (fullName.startsWith('Los Angeles')) {
-      const team = fullName.replace('Los Angeles ', '')
-      if (team === 'Lakers') return 'LAL Lakers'
-      if (team === 'Clippers') return 'LAC Clippers'
-      if (team === 'Angels') return 'LA Angels'
-      if (team === 'Dodgers') return 'LAD Dodgers'
-      if (team === 'Rams') return 'LA Rams'
-      return `LAA ${team}`
-    }
-
-    // Handle special cases for New York teams
-    if (fullName.startsWith('New York')) {
-      const team = fullName.replace('New York ', '')
-      if (team === 'Yankees') return 'NYY Yankees'
-      if (team === 'Mets') return 'NYM Mets'
-      if (team === 'Knicks') return 'NYK Knicks'
-      if (team === 'Nets') return 'BKN Nets'
-      if (team === 'Giants') return 'NYG Giants'
-      if (team === 'Jets') return 'NYJ Jets'
-      if (team === 'Rangers') return 'NYR Rangers'
-      if (team === 'Islanders') return 'NYI Islanders'
-      return `NY ${team}`
-    }
-
-    // Handle special cases for Tampa Bay teams
-    if (fullName.startsWith('Tampa Bay')) {
-      const team = fullName.replace('Tampa Bay ', '')
-      if (team === 'Rays') return 'TB Rays'
-      if (team === 'Lightning') return 'TB Lightning'
-      if (team === 'Buccaneers') return 'TB Buccaneers'
-      return `TB ${team}`
-    }
-
-    // Handle special cases for Florida teams
-    if (fullName.startsWith('Florida')) {
-      const team = fullName.replace('Florida ', '')
-      if (team === 'Panthers') return 'FLA Panthers'
-      return `FLA ${team}`
-    }
-
-    // Handle special cases for Kansas City teams
-    if (fullName.startsWith('Kansas City')) {
-      const team = fullName.replace('Kansas City ', '')
-      if (team === 'Royals') return 'KC Royals'
-      if (team === 'Chiefs') return 'KC Chiefs'
-      return `KC ${team}`
-    }
-
-    // Handle special cases for San Diego teams
-    if (fullName.startsWith('San Diego')) {
-      const team = fullName.replace('San Diego ', '')
-      if (team === 'Padres') return 'SD Padres'
-      return `SD ${team}`
-    }
-
-    // Handle special cases for Oklahoma City teams
-    if (fullName.startsWith('Oklahoma City')) {
-      const team = fullName.replace('Oklahoma City ', '')
-      if (team === 'Thunder') return 'OKC Thunder'
-      return `OKC ${team}`
-    }
-
-    // Handle special cases for New Orleans teams
-    if (fullName.startsWith('New Orleans')) {
-      const team = fullName.replace('New Orleans ', '')
-      if (team === 'Saints') return 'NO Saints'
-      return `NO ${team}`
-    }
-
-    // Handle special cases for Las Vegas teams
-    if (fullName.startsWith('Las Vegas')) {
-      const team = fullName.replace('Las Vegas ', '')
-      if (team === 'Raiders') return 'LV Raiders'
-      return `LV ${team}`
-    }
-
-    // Handle special cases for Green Bay teams
-    if (fullName.startsWith('Green Bay')) {
-      const team = fullName.replace('Green Bay ', '')
-      if (team === 'Packers') return 'GB Packers'
-      return `GB ${team}`
-    }
-
+    // Fallback to first word abbreviation
     const parts = fullName.split(' ')
     if (parts.length > 1) {
       const city = parts[0]
       const team = parts.slice(1).join(' ')
-      const cityAbbr = teamAbbreviations[city] || (city.length > 4 ? city.substring(0, 3).toUpperCase() : city)
+      const cityAbbr = city.length > 4 ? city.substring(0, 3).toUpperCase() : city.toUpperCase()
       return `${cityAbbr} ${team}`
     }
     return fullName
@@ -586,44 +477,56 @@ export default function SportsbookPage() {
   }
 
   return (
-    <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 space-y-4 sm:space-y-0">
-        <div className="flex items-center space-x-3">
-          <h1 className="text-2xl sm:text-3xl font-bold">Sportsbook</h1>
-          {refreshing && (
-            <div className="flex items-center text-blue-400">
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-400 border-t-transparent mr-2"></div>
-              <span className="text-xs sm:text-sm">Updating...</span>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      {/* Enhanced Mobile-First Header */}
+      <div className="sticky top-0 z-40 bg-gray-900/95 backdrop-blur-xl border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          {/* Mobile Header - Ultra Compact Sportsbook Style */}
+          <div className="sm:hidden space-y-2">
+            <div className="flex items-center justify-between">
+              <h1 className="text-lg font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                Sportsbook
+              </h1>
+              {refreshing && (
+                <div className="flex items-center text-blue-400">
+                  <div className="animate-spin rounded-full h-3 w-3 border-2 border-blue-400 border-t-transparent mr-1"></div>
+                  <span className="text-xs">Updating...</span>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
-          <select
-            value={selectedSport}
-            onChange={(e) => setSelectedSport(e.target.value)}
-            className="bg-gray-800 text-white px-3 sm:px-4 py-2 rounded-lg border border-gray-700 focus:outline-none focus:border-blue-500 text-sm sm:text-base w-full sm:w-auto"
-          >
-            <option value="All">All Sports</option>
-            <option value="NFL">NFL</option>
-            <option value="NBA">NBA</option>
-            <option value="MLB">MLB</option>
-            <option value="NHL">NHL</option>
-          </select>
-          <div className="flex space-x-2">
-            <button
-              onClick={handleRefresh}
-              className="bg-blue-500 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm sm:text-base flex-1 sm:flex-initial"
-            >
-              Refresh
-            </button>
+            
+            {/* Mobile Sport Selector - Compact */}
+            <div className="flex items-center space-x-2">
+              <select
+                value={selectedSport}
+                onChange={(e) => setSelectedSport(e.target.value)}
+                className="flex-1 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-2 py-1.5 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200 text-xs"
+              >
+                <option value="All">All Sports</option>
+                <option value="NFL">NFL</option>
+                <option value="NBA">NBA</option>
+                <option value="MLB">MLB</option>
+                <option value="NHL">NHL</option>
+              </select>
+              <button
+                onClick={handleRefresh}
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white px-3 py-1.5 rounded-lg transition-all duration-200 font-medium shadow-lg hover:shadow-blue-500/25 transform hover:scale-105"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Mobile Tab Navigation - Compact */}
             <Tab.Group>
-              <Tab.List className="flex space-x-1 sm:space-x-2 bg-gray-800 p-1 rounded-lg">
+              <Tab.List className="flex space-x-1 bg-white/10 backdrop-blur-sm p-0.5 rounded-lg">
                 <Tab
                   className={({ selected }) =>
-                    `px-2 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                    `flex-1 py-1.5 px-3 rounded-md text-xs font-medium transition-all duration-200 ${
                       selected
-                        ? 'bg-blue-500 text-white'
-                        : 'text-gray-400 hover:text-white'
+                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5'
                     }`
                   }
                   onClick={() => setActiveTab('upcoming')}
@@ -632,10 +535,10 @@ export default function SportsbookPage() {
                 </Tab>
                 <Tab
                   className={({ selected }) =>
-                    `px-2 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                    `flex-1 py-1.5 px-3 rounded-md text-xs font-medium transition-all duration-200 ${
                       selected
-                        ? 'bg-blue-500 text-white'
-                        : 'text-gray-400 hover:text-white'
+                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5'
                     }`
                   }
                   onClick={() => setActiveTab('live')}
@@ -645,245 +548,523 @@ export default function SportsbookPage() {
               </Tab.List>
             </Tab.Group>
           </div>
+
+          {/* Desktop Header - Compact */}
+          <div className="hidden sm:flex justify-between items-center">
+            <div className="flex items-center space-x-3">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                Sportsbook
+              </h1>
+              {refreshing && (
+                <div className="flex items-center text-blue-400">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-400 border-t-transparent mr-2"></div>
+                  <span className="text-sm">Updating...</span>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center space-x-3">
+              <select
+                value={selectedSport}
+                onChange={(e) => setSelectedSport(e.target.value)}
+                className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 text-sm"
+              >
+                <option value="All">All Sports</option>
+                <option value="NFL">NFL</option>
+                <option value="NBA">NBA</option>
+                <option value="MLB">MLB</option>
+                <option value="NHL">NHL</option>
+              </select>
+              <button
+                onClick={handleRefresh}
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white px-4 py-2 rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-blue-500/25 transform hover:scale-105 text-sm"
+              >
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Refresh
+                </div>
+              </button>
+              <Tab.Group>
+                <Tab.List className="flex space-x-1 bg-white/10 backdrop-blur-sm p-1 rounded-xl">
+                  <Tab
+                    className={({ selected }) =>
+                      `px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        selected
+                          ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                          : 'text-gray-400 hover:text-white hover:bg-white/5'
+                      }`
+                    }
+                    onClick={() => setActiveTab('upcoming')}
+                  >
+                    Upcoming
+                  </Tab>
+                  <Tab
+                    className={({ selected }) =>
+                      `px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        selected
+                          ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                          : 'text-gray-400 hover:text-white hover:bg-white/5'
+                      }`
+                    }
+                    onClick={() => setActiveTab('live')}
+                  >
+                    Live
+                  </Tab>
+                </Tab.List>
+              </Tab.Group>
+            </div>
+          </div>
         </div>
       </div>
-      
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-          <strong className="font-bold">Error: </strong>
-          <span className="block sm:inline">{error}</span>
-        </div>
-      )}
 
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, index) => (
-            <div key={index} className="bg-gray-800 rounded-xl shadow-lg border border-gray-700 p-6 animate-pulse">
-              <div className="flex justify-between items-center mb-4">
-                <div className="h-4 bg-gray-700 rounded w-20"></div>
-                <div className="h-3 bg-gray-700 rounded w-16"></div>
-              </div>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <div className="h-5 bg-gray-700 rounded w-32"></div>
-                  <div className="h-4 bg-gray-700 rounded w-12"></div>
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+      
+        {error && (
+          <div className="relative mb-6">
+            <div className="absolute inset-0 bg-gradient-to-r from-red-600/10 to-pink-600/10 rounded-2xl blur-xl"></div>
+            <div className="relative bg-red-500/10 backdrop-blur-sm border border-red-500/20 rounded-2xl p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 bg-red-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                  <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
                 </div>
-                <div className="flex justify-between items-center">
-                  <div className="h-5 bg-gray-700 rounded w-28"></div>
-                  <div className="h-4 bg-gray-700 rounded w-12"></div>
-                </div>
-              </div>
-              <div className="mt-4 pt-4 border-t border-gray-700">
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="h-8 bg-gray-700 rounded"></div>
-                  <div className="h-8 bg-gray-700 rounded"></div>
-                  <div className="h-8 bg-gray-700 rounded"></div>
+                <div>
+                  <div className="text-red-400 font-semibold text-sm">Error</div>
+                  <div className="text-red-300 text-sm">{error}</div>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-      ) : filteredGames.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-gray-500">No games available at the moment.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredGames.map((game) => {
-            const bookmaker = game.bookmakers[0]
-            if (!bookmaker) return null
+          </div>
+        )}
 
-            const h2hMarket = bookmaker.markets.find((m) => m.key === 'h2h')
-            const spreadMarket = bookmaker.markets.find((m) => m.key === 'spreads')
-            const totalMarket = bookmaker.markets.find((m) => m.key === 'totals')
-
-            // Only show live games in live tab and upcoming games in upcoming tab
-            if (activeTab === 'live' && game.status !== 'live') return null
-            if (activeTab === 'upcoming' && game.status === 'live') return null
-
-            return (
-              <div 
-                key={game.id} 
-                className={`bg-gray-800 rounded-lg shadow-lg p-3 sm:p-6 border ${
-                  game.status === 'live' ? 'border-red-500' : 'border-gray-700'
-                } hover:border-blue-500 transition-all duration-200`}
-              >
-                <div className="mb-3 sm:mb-4">
-                  <div className="text-gray-400 text-xs sm:text-sm mb-2">
-                    {game.status === 'live' ? (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-red-500 font-medium animate-pulse text-xs sm:text-sm">LIVE</span>
-                          {game.scores && (
-                            <span className="text-white font-bold text-sm sm:text-base">
-                              {game.scores.away} - {game.scores.home}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-1 sm:space-x-2">
-                          {game.period && (
-                            <span className="text-white text-xs sm:text-sm">
-                              {game.sport_key.includes('baseball') ? (
-                                <span>Inn {game.period}</span>
-                              ) : game.sport_key.includes('basketball') ? (
-                                <span>Q{game.period}</span>
-                              ) : game.sport_key.includes('hockey') ? (
-                                <span>P{game.period}</span>
-                              ) : game.sport_key.includes('football') ? (
-                                <span>Q{game.period}</span>
-                              ) : (
-                                <span>P{game.period}</span>
-                              )}
-                            </span>
-                          )}
-                          {game.clock && !game.sport_key.includes('baseball') && (
-                            <span className="text-white font-mono text-xs sm:text-sm">{game.clock}</span>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      new Date(game.commence_time).toLocaleString('en-US', {
-                        weekday: 'short',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: 'numeric',
-                        timeZoneName: 'short'
-                      })
-                    )}
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex-1 text-right">
-                      <div className="text-white font-bold text-sm sm:text-base truncate max-w-[100px] sm:max-w-[120px] ml-auto">{formatTeamName(game.away_team)}</div>
-                      <div className="text-gray-400 text-xs">Away</div>
-                      {game.scores && (
-                        <div className="text-lg sm:text-xl font-bold text-white mt-1">{game.scores.away}</div>
-                      )}
+        {loading ? (
+          <div className="space-y-4 sm:space-y-6">
+            {[...Array(6)].map((_, index) => (
+              <div key={index} className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-purple-600/5 rounded-2xl blur-xl"></div>
+                <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 animate-pulse">
+                  {/* Mobile Loading Layout */}
+                  <div className="sm:hidden space-y-4">
+                    <div className="flex justify-between items-center">
+                      <div className="h-4 bg-white/10 rounded w-20"></div>
+                      <div className="h-3 bg-white/10 rounded w-16"></div>
                     </div>
-                    <div className="mx-2 sm:mx-4 text-gray-400">@</div>
-                    <div className="flex-1 text-left">
-                      <div className="text-white font-bold text-sm sm:text-base truncate max-w-[100px] sm:max-w-[120px]">{formatTeamName(game.home_team)}</div>
-                      <div className="text-gray-400 text-xs">Home</div>
-                      {game.scores && (
-                        <div className="text-lg sm:text-xl font-bold text-white mt-1">{game.scores.home}</div>
-                      )}
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <div className="h-5 bg-white/10 rounded w-32"></div>
+                        <div className="h-4 bg-white/10 rounded w-12"></div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <div className="h-5 bg-white/10 rounded w-28"></div>
+                        <div className="h-4 bg-white/10 rounded w-12"></div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="h-10 bg-white/10 rounded-xl"></div>
+                      <div className="h-10 bg-white/10 rounded-xl"></div>
+                      <div className="h-10 bg-white/10 rounded-xl"></div>
                     </div>
                   </div>
-                </div>
-
-                <div className="space-y-3 sm:space-y-4">
-                  {h2hMarket && (
-                    <div>
-                      <h3 className="font-medium mb-2 text-gray-300">Money Line</h3>
-                      <div className="flex justify-between">
-                        {h2hMarket.outcomes
-                          .sort((a, b) => {
-                            if (a.name === game.away_team) return -1;
-                            if (a.name === game.home_team) return 1;
-                            return 0;
-                          })
-                          .map((o) => (
-                            <button
-                              key={o.name}
-                              onClick={() => handleBetClick(
-                                game,
-                                'moneyline',
-                                o.name === game.home_team ? 'home' : 'away',
-                                o.price
-                              )}
-                              className={`flex-1 mx-1 ${
-                                game.status === 'live' ? 'bg-gray-800' : 'bg-gray-700'
-                              } hover:bg-blue-600 text-white py-2 px-2 sm:px-4 rounded-lg transition-all duration-200 flex flex-col items-center`}
-                            >
-                              <div className="font-medium truncate text-xs sm:text-sm">{formatTeamName(o.name)}</div>
-                              <div className={`text-xs sm:text-sm ${game.status === 'live' ? 'text-yellow-400' : 'text-green-400'}`}>
-                                {o.price > 0 ? `+${o.price}` : o.price}
-                              </div>
-                            </button>
-                          ))}
+                  
+                  {/* Desktop Loading Layout */}
+                  <div className="hidden sm:block">
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="h-4 bg-white/10 rounded w-20"></div>
+                      <div className="h-3 bg-white/10 rounded w-16"></div>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <div className="h-5 bg-white/10 rounded w-32"></div>
+                        <div className="h-4 bg-white/10 rounded w-12"></div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <div className="h-5 bg-white/10 rounded w-28"></div>
+                        <div className="h-4 bg-white/10 rounded w-12"></div>
                       </div>
                     </div>
-                  )}
-
-                  {spreadMarket && (
-                    <div>
-                      <h3 className="font-medium mb-2 text-gray-300">Spread</h3>
-                      <div className="flex justify-between">
-                        {spreadMarket.outcomes
-                          .sort((a, b) => {
-                            if (a.name === game.away_team) return -1;
-                            if (a.name === game.home_team) return 1;
-                            return 0;
-                          })
-                          .map((o) => (
-                            <button
-                              key={o.name}
-                              onClick={() => handleBetClick(
-                                game,
-                                'spread',
-                                o.name === game.home_team ? 'home' : 'away',
-                                o.price,
-                                o.point
-                              )}
-                              className={`flex-1 mx-1 ${
-                                game.status === 'live' ? 'bg-gray-800' : 'bg-gray-700'
-                              } hover:bg-blue-600 text-white py-2 px-2 sm:px-4 rounded-lg transition-all duration-200 flex flex-col items-center`}
-                            >
-                              <div className="font-medium truncate text-xs sm:text-sm">{formatTeamName(o.name)}</div>
-                              <div className={`text-xs sm:text-sm ${game.status === 'live' ? 'text-yellow-400' : 'text-green-400'}`}>
-                                {o.point ? `${o.point > 0 ? '+' : ''}${o.point} (${o.price > 0 ? '+' : ''}${o.price})` : o.price}
-                              </div>
-                            </button>
-                          ))}
+                    <div className="mt-4 pt-4 border-t border-white/10">
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="h-8 bg-white/10 rounded"></div>
+                        <div className="h-8 bg-white/10 rounded"></div>
+                        <div className="h-8 bg-white/10 rounded"></div>
                       </div>
                     </div>
-                  )}
-
-                  {totalMarket && (
-                    <div>
-                      <h3 className="font-medium mb-2 text-gray-300">Total</h3>
-                      <div className="flex justify-between">
-                        {totalMarket.outcomes.map((o) => (
-                          <button
-                            key={o.name}
-                            onClick={() => handleBetClick(
-                              game,
-                              'overUnder',
-                              o.name.toLowerCase() === 'over' ? 'over' : 'under',
-                              o.price,
-                              o.point
-                            )}
-                            className={`flex-1 mx-1 ${
-                              game.status === 'live' ? 'bg-gray-800' : 'bg-gray-700'
-                            } hover:bg-blue-600 text-white py-2 px-2 sm:px-4 rounded-lg transition-all duration-200 flex flex-col items-center`}
-                          >
-                            <div className="font-medium truncate text-xs sm:text-sm">{o.name}</div>
-                            <div className={`text-xs sm:text-sm ${game.status === 'live' ? 'text-yellow-400' : 'text-green-400'}`}>
-                              {o.point ? `${o.name} ${o.point} (${o.price > 0 ? '+' : ''}${o.price})` : o.price}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  </div>
                 </div>
               </div>
-            )
-          })}
-        </div>
-      )}
+            ))}
+          </div>
+        ) : filteredGames.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-gray-600 to-gray-700 rounded-full flex items-center justify-center">
+              <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">No Games Available</h3>
+            <p className="text-gray-400 mb-6">No games available at the moment.</p>
+            <button
+              onClick={handleRefresh}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white px-8 py-3 rounded-2xl transition-all duration-300 font-medium shadow-lg hover:shadow-blue-500/25 transform hover:scale-105"
+            >
+              Refresh Games
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+            {filteredGames.map((game) => {
+              const bookmaker = game.bookmakers[0]
+              if (!bookmaker) return null
 
-      {selectedBet && (
-        <BetModal
-          isOpen={!!selectedBet}
-          onClose={() => setSelectedBet(null)}
-          bet={selectedBet}
-          onBetPlaced={() => {
-            setSelectedBet(null)
-          }}
-          isLiveBet={activeTab === 'live'}
-        />
-      )}
+              const h2hMarket = bookmaker.markets.find((m) => m.key === 'h2h')
+              const spreadMarket = bookmaker.markets.find((m) => m.key === 'spreads')
+              const totalMarket = bookmaker.markets.find((m) => m.key === 'totals')
+
+              // Only show live games in live tab and upcoming games in upcoming tab
+              if (activeTab === 'live' && game.status !== 'live') return null
+              if (activeTab === 'upcoming' && game.status === 'live') return null
+
+              return (
+                <div key={game.id} className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-purple-600/5 rounded-2xl blur-xl"></div>
+y                  <div className={`relative bg-gradient-to-br from-white/8 to-white/3 backdrop-blur-xl border rounded-xl p-3 transition-all duration-300 hover:scale-[1.01] hover:shadow-2xl hover:shadow-blue-500/10 ${
+                    game.status === 'live' ? 'border-red-500/50 bg-gradient-to-br from-red-500/8 to-red-500/3 shadow-red-500/20' : 'border-white/20 shadow-lg'
+                  }`}>
+                    {/* Mobile FanDuel-Style Row Layout */}
+                    <div className="sm:hidden">
+                      {/* Game Header */}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                          {game.status === 'live' && (
+                            <div className="flex items-center space-x-2 bg-red-500/20 px-2 py-1 rounded-full">
+                              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                              <span className="text-red-300 font-bold text-xs">LIVE</span>
+                            </div>
+                          )}
+                          <div className="flex flex-col">
+                            <span className="text-gray-300 text-xs font-medium">
+                              {game.status === 'live' ? (
+                                game.scores ? `${game.scores.away} - ${game.scores.home}` : 'Live Game'
+                              ) : (
+                                new Date(game.commence_time).toLocaleString('en-US', {
+                                  hour: 'numeric',
+                                  minute: '2-digit'
+                                })
+                              )}
+                            </span>
+                            {game.status === 'live' && game.period && (
+                              <span className="text-gray-400 text-xs">
+                                {game.sport_key.includes('baseball') ? `Inning ${game.period}` :
+                                 game.sport_key.includes('basketball') ? `Quarter ${game.period}` :
+                                 game.sport_key.includes('hockey') ? `Period ${game.period}` :
+                                 game.sport_key.includes('football') ? `Quarter ${game.period}` :
+                                 `Period ${game.period}`}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-gray-400 text-xs font-medium">
+                          {game.sport_key.toUpperCase().replace('_', ' ')}
+                        </div>
+                      </div>
+
+                      {/* Away Team Row */}
+                      <div className="mb-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex flex-col">
+                            <div className="text-white font-bold text-sm">{formatTeamName(game.away_team)}</div>
+                            <div className="text-gray-400 text-xs">@</div>
+                          </div>
+                          <div className="flex space-x-2">
+                            {/* Moneyline */}
+                            {h2hMarket && (
+                              <button
+                                onClick={() => handleBetClick(
+                                  game,
+                                  'moneyline',
+                                  'away',
+                                  h2hMarket.outcomes.find(o => o.name === game.away_team)?.price || 0
+                                )}
+                                className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg ${
+                                  game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
+                                }`}
+                              >
+                                {h2hMarket.outcomes.find(o => o.name === game.away_team)?.price ? 
+                                  (h2hMarket.outcomes.find(o => o.name === game.away_team)!.price > 0 ? 
+                                    `+${h2hMarket.outcomes.find(o => o.name === game.away_team)!.price}` : 
+                                    h2hMarket.outcomes.find(o => o.name === game.away_team)!.price) : 'N/A'}
+                              </button>
+                            )}
+                            {/* Spread */}
+                            {spreadMarket && (
+                              <button
+                                onClick={() => handleBetClick(
+                                  game,
+                                  'spread',
+                                  'away',
+                                  spreadMarket.outcomes.find(o => o.name === game.away_team)?.price || 0,
+                                  spreadMarket.outcomes.find(o => o.name === game.away_team)?.point || 0
+                                )}
+                                className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg ${
+                                  game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
+                                }`}
+                              >
+                                {spreadMarket.outcomes.find(o => o.name === game.away_team)?.point ? 
+                                  `${(spreadMarket.outcomes.find(o => o.name === game.away_team)?.point || 0) > 0 ? '+' : ''}${spreadMarket.outcomes.find(o => o.name === game.away_team)?.point}` : 'N/A'}
+                              </button>
+                            )}
+                            {/* Total Over */}
+                            {totalMarket && (
+                              <button
+                                onClick={() => handleBetClick(
+                                  game,
+                                  'overUnder',
+                                  'over',
+                                  totalMarket.outcomes.find(o => o.name.toLowerCase() === 'over')?.price || 0,
+                                  totalMarket.outcomes.find(o => o.name.toLowerCase() === 'over')?.point || 0
+                                )}
+                                className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg ${
+                                  game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
+                                }`}
+                              >
+                                O{totalMarket.outcomes.find(o => o.name.toLowerCase() === 'over')?.point || ''}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Home Team Row */}
+                      <div className="mb-1">
+                        <div className="flex items-center justify-between">
+                          <div className="text-white font-bold text-sm">{formatTeamName(game.home_team)}</div>
+                          <div className="flex space-x-2">
+                            {/* Moneyline */}
+                            {h2hMarket && (
+                              <button
+                                onClick={() => handleBetClick(
+                                  game,
+                                  'moneyline',
+                                  'home',
+                                  h2hMarket.outcomes.find(o => o.name === game.home_team)?.price || 0
+                                )}
+                                className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg ${
+                                  game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
+                                }`}
+                              >
+                                {h2hMarket.outcomes.find(o => o.name === game.home_team)?.price ? 
+                                  (h2hMarket.outcomes.find(o => o.name === game.home_team)!.price > 0 ? 
+                                    `+${h2hMarket.outcomes.find(o => o.name === game.home_team)!.price}` : 
+                                    h2hMarket.outcomes.find(o => o.name === game.home_team)!.price) : 'N/A'}
+                              </button>
+                            )}
+                            {/* Spread */}
+                            {spreadMarket && (
+                              <button
+                                onClick={() => handleBetClick(
+                                  game,
+                                  'spread',
+                                  'home',
+                                  spreadMarket.outcomes.find(o => o.name === game.home_team)?.price || 0,
+                                  spreadMarket.outcomes.find(o => o.name === game.home_team)?.point || 0
+                                )}
+                                className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg ${
+                                  game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
+                                }`}
+                              >
+                                {spreadMarket.outcomes.find(o => o.name === game.home_team)?.point ? 
+                                  `${(spreadMarket.outcomes.find(o => o.name === game.home_team)?.point || 0) > 0 ? '+' : ''}${spreadMarket.outcomes.find(o => o.name === game.home_team)?.point}` : 'N/A'}
+                              </button>
+                            )}
+                            {/* Total Under */}
+                            {totalMarket && (
+                              <button
+                                onClick={() => handleBetClick(
+                                  game,
+                                  'overUnder',
+                                  'under',
+                                  totalMarket.outcomes.find(o => o.name.toLowerCase() === 'under')?.price || 0,
+                                  totalMarket.outcomes.find(o => o.name.toLowerCase() === 'under')?.point || 0
+                                )}
+                                className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg ${
+                                  game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
+                                }`}
+                              >
+                                U{totalMarket.outcomes.find(o => o.name.toLowerCase() === 'under')?.point || ''}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Desktop Game Header - Compact */}
+                    <div className="hidden sm:block mb-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          {game.status === 'live' && (
+                            <div className="flex items-center space-x-2">
+                              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                              <span className="text-red-400 font-bold text-sm">LIVE</span>
+                            </div>
+                          )}
+                          <span className="text-gray-400 text-sm">
+                            {game.status === 'live' ? (
+                              game.scores ? `${game.scores.away} - ${game.scores.home}` : 'Live'
+                            ) : (
+                              new Date(game.commence_time).toLocaleString('en-US', {
+                                weekday: 'short',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: 'numeric',
+                                minute: 'numeric'
+                              })
+                            )}
+                          </span>
+                        </div>
+                        {game.status === 'live' && game.period && (
+                          <div className="text-white text-sm font-medium">
+                            {game.sport_key.includes('baseball') ? `Inn ${game.period}` :
+                             game.sport_key.includes('basketball') ? `Q${game.period}` :
+                             game.sport_key.includes('hockey') ? `P${game.period}` :
+                             game.sport_key.includes('football') ? `Q${game.period}` :
+                             `P${game.period}`}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-center">
+                        <div className="text-white font-bold text-lg mb-1">{formatTeamName(game.away_team)}</div>
+                        <div className="text-gray-400 text-sm mb-1">@</div>
+                        <div className="text-white font-bold text-lg">{formatTeamName(game.home_team)}</div>
+                      </div>
+                    </div>
+
+
+                    {/* Desktop Odds Layout - Compact */}
+                    <div className="hidden sm:block space-y-3">
+                      {h2hMarket && (
+                        <div>
+                          <h3 className="font-semibold mb-2 text-white text-sm">Money Line</h3>
+                          <div className="grid grid-cols-2 gap-2">
+                            {h2hMarket.outcomes
+                              .sort((a, b) => {
+                                if (a.name === game.away_team) return -1;
+                                if (a.name === game.home_team) return 1;
+                                return 0;
+                              })
+                              .map((o) => (
+                                <button
+                                  key={o.name}
+                                  onClick={() => handleBetClick(
+                                    game,
+                                    'moneyline',
+                                    o.name === game.home_team ? 'home' : 'away',
+                                    o.price
+                                  )}
+                                  className={`bg-white/10 hover:bg-blue-600/20 border border-white/20 hover:border-blue-500/50 text-white py-3 px-3 rounded-xl transition-all duration-200 flex flex-col items-center transform hover:scale-105 ${
+                                    game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-500/50' : ''
+                                  }`}
+                                >
+                                  <div className="font-bold text-sm truncate mb-1">{formatTeamName(o.name)}</div>
+                                  <div className={`text-sm font-semibold ${
+                                    game.status === 'live' ? 'text-yellow-400' : 'text-green-400'
+                                  }`}>
+                                    {o.price > 0 ? `+${o.price}` : o.price}
+                                  </div>
+                                </button>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {spreadMarket && (
+                        <div>
+                          <h3 className="font-semibold mb-2 text-white text-sm">Spread</h3>
+                          <div className="grid grid-cols-2 gap-2">
+                            {spreadMarket.outcomes
+                              .sort((a, b) => {
+                                if (a.name === game.away_team) return -1;
+                                if (a.name === game.home_team) return 1;
+                                return 0;
+                              })
+                              .map((o) => (
+                                <button
+                                  key={o.name}
+                                  onClick={() => handleBetClick(
+                                    game,
+                                    'spread',
+                                    o.name === game.home_team ? 'home' : 'away',
+                                    o.price,
+                                    o.point
+                                  )}
+                                  className={`bg-white/10 hover:bg-blue-600/20 border border-white/20 hover:border-blue-500/50 text-white py-3 px-3 rounded-xl transition-all duration-200 flex flex-col items-center transform hover:scale-105 ${
+                                    game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-500/50' : ''
+                                  }`}
+                                >
+                                  <div className="font-bold text-sm truncate mb-1">{formatTeamName(o.name)}</div>
+                                  <div className={`text-sm font-semibold ${
+                                    game.status === 'live' ? 'text-yellow-400' : 'text-green-400'
+                                  }`}>
+                                    {o.point ? `${o.point > 0 ? '+' : ''}${o.point} (${o.price > 0 ? '+' : ''}${o.price})` : o.price}
+                                  </div>
+                                </button>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {totalMarket && (
+                        <div>
+                          <h3 className="font-semibold mb-2 text-white text-sm">Total</h3>
+                          <div className="grid grid-cols-2 gap-2">
+                            {totalMarket.outcomes.map((o) => (
+                              <button
+                                key={o.name}
+                                onClick={() => handleBetClick(
+                                  game,
+                                  'overUnder',
+                                  o.name.toLowerCase() === 'over' ? 'over' : 'under',
+                                  o.price,
+                                  o.point
+                                )}
+                                className={`bg-white/10 hover:bg-blue-600/20 border border-white/20 hover:border-blue-500/50 text-white py-3 px-3 rounded-xl transition-all duration-200 flex flex-col items-center transform hover:scale-105 ${
+                                  game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-500/50' : ''
+                                }`}
+                              >
+                                <div className="font-bold text-sm truncate mb-1">{o.name}</div>
+                                <div className={`text-sm font-semibold ${
+                                  game.status === 'live' ? 'text-yellow-400' : 'text-green-400'
+                                }`}>
+                                  {o.point ? `${o.name} ${o.point} (${o.price > 0 ? '+' : ''}${o.price})` : o.price}
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {selectedBet && (
+          <BetModal
+            isOpen={!!selectedBet}
+            onClose={() => setSelectedBet(null)}
+            bet={selectedBet}
+            onBetPlaced={() => {
+              setSelectedBet(null)
+            }}
+            isLiveBet={activeTab === 'live'}
+          />
+        )}
+      </div>
     </div>
   )
 } 

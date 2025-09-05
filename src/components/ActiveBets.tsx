@@ -126,30 +126,44 @@ export default function ActiveBets() {
 
   if (loading) {
     return (
-      <div className="text-center py-4">
-        <div className="text-gray-400">Loading active bets...</div>
+      <div className="text-center py-12">
+        <div className="inline-flex items-center gap-3">
+          <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="text-gray-400 text-lg">Loading active bets...</div>
+        </div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="text-center py-4">
-        <div className="text-red-500">{error}</div>
+      <div className="text-center py-12">
+        <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center">
+          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+        </div>
+        <div className="text-red-400 text-lg font-medium">{error}</div>
       </div>
     )
   }
 
   if (activeBets.length === 0) {
     return (
-      <div className="text-center py-4">
-        <div className="text-gray-400">No active bets</div>
+      <div className="text-center py-16">
+        <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-gray-600 to-gray-700 rounded-full flex items-center justify-center">
+          <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+        <h3 className="text-xl font-semibold text-white mb-2">No Active Bets</h3>
+        <p className="text-gray-400">You don't have any active bets at the moment.</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-3 sm:space-y-4">
+    <div className="space-y-4 sm:space-y-6">
       {activeBets.map((bet) => {
         const gameDetails = JSON.parse(bet.gameDetails)
         const isReceiver = bet.receiverId === session?.user?.id
@@ -160,114 +174,96 @@ export default function ActiveBets() {
         const isLive = gameDetails.status === 'live'
 
         return (
-          <div key={bet.id} className={`bg-gray-800 rounded-lg shadow-lg border ${
-            isLive ? 'border-red-500' : 'border-gray-700'
-          } hover:border-blue-500 transition-all duration-200`}>
+          <div key={bet.id} className={`group bg-white/5 hover:bg-white/10 border rounded-2xl p-4 sm:p-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${
+            isLive ? 'border-red-500/50 bg-red-500/5' : 'border-white/10'
+          }`}>
             {/* Header */}
-            <div className="p-3 sm:p-4 border-b border-gray-700">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <h3 className="text-lg sm:text-xl font-bold text-white">
-                      {gameDetails.away_team} @ {gameDetails.home_team}
-                    </h3>
-                    {isLive && (
-                      <span className="flex items-center">
-                        <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse mr-2"></span>
-                        <span className="text-red-500 font-medium text-sm">LIVE</span>
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs sm:text-sm text-gray-400 mb-1">
-                    {new Date(gameDetails.commence_time).toLocaleString()}
-                  </p>
-                  <p className="text-sm sm:text-lg font-semibold text-white">
-                    Against: {isReceiver ? bet.sender.username : bet.receiver.username}
-                  </p>
-                  {isLive && gameDetails.scores && (
-                    <p className="text-base sm:text-lg font-bold text-white mt-1">
-                      {gameDetails.scores.away} - {gameDetails.scores.home}
-                    </p>
+            <div className="mb-3">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-base font-bold text-white flex-1 min-w-0">
+                  <div className="truncate">{gameDetails.away_team} @ {gameDetails.home_team}</div>
+                </h3>
+                <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+                  {isLive && (
+                    <div className="flex items-center gap-1 bg-red-500/20 border border-red-500/50 rounded px-2 py-1">
+                      <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div>
+                      <span className="text-red-400 font-bold text-xs">LIVE</span>
+                    </div>
                   )}
+                  <div className="bg-green-600 text-white px-2 py-1 rounded text-sm font-bold">
+                    ${bet.amount}
+                  </div>
                 </div>
-                <div className="text-right mt-2 sm:mt-0">
-                  <p className="text-xs text-gray-500">
-                    Accepted: {new Date(bet.createdAt).toLocaleString()}
-                  </p>
-                </div>
+              </div>
+              <div className="text-xs text-gray-400 space-y-1">
+                <div>Game: {new Date(gameDetails.commence_time).toLocaleString()}</div>
+                <div>vs {isReceiver ? bet.sender.username : bet.receiver.username}</div>
+                <div>Accepted: {new Date(bet.createdAt).toLocaleDateString()}</div>
+                {isLive && gameDetails.scores && (
+                  <div className="bg-gray-800/50 rounded p-2 mt-2">
+                    <div className="text-center">
+                      <p className="text-xs text-gray-400 mb-1">Current Score</p>
+                      <p className="text-lg font-bold text-white">
+                        {gameDetails.scores.away} - {gameDetails.scores.home}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Bet Details */}
-            <div className="p-3 sm:p-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                {/* Your Pick */}
-                <div className="bg-gray-700 rounded-lg p-3 sm:p-4">
-                  <div className="flex justify-between items-center mb-2 sm:mb-3">
-                    <h4 className="text-base sm:text-lg font-semibold text-white">Your Pick</h4>
-                    <span className="px-2 sm:px-3 py-1 bg-blue-600 rounded-full text-xs sm:text-sm font-medium text-white">
-                      {formatBetType(bet.betType)}
-                    </span>
+            {/* Bet Details - Mobile Optimized */}
+            <div className="space-y-2">
+              {/* Your Pick */}
+              <div className="bg-gray-800/50 border border-gray-600/50 rounded-lg p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-gray-400 uppercase tracking-wide">Your Pick</span>
+                  <span className="bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold">
+                    {formatBetType(bet.betType)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-semibold text-sm truncate">
+                      {bet.betType === 'overUnder' 
+                        ? (isReceiver ? (bet.receiverTeam === 'Over' ? 'Over' : 'Under') : (bet.senderTeam === 'Over' ? 'Over' : 'Under'))
+                        : (isReceiver ? bet.receiverTeam : bet.senderTeam)
+                      }
+                    </p>
+                    <p className="text-blue-400 text-xs">
+                      {formatOdds(yourOdds, bet.betType)}
+                    </p>
                   </div>
-                  <div className="space-y-2 sm:space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-400 text-sm">Team</span>
-                      <span className="text-white font-medium text-sm">
-                        {bet.betType === 'overUnder' 
-                          ? (isReceiver ? (bet.receiverTeam === 'Over' ? 'Over' : 'Under') : (bet.senderTeam === 'Over' ? 'Over' : 'Under'))
-                          : (isReceiver ? bet.receiverTeam : bet.senderTeam)
-                        }
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-400 text-sm">Odds</span>
-                      <span className="text-base sm:text-lg font-bold text-green-400">
-                        {formatOdds(yourOdds, bet.betType)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-400 text-sm">Risk</span>
-                      <span className="text-white font-medium">${bet.amount}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-400 text-sm">To Win</span>
-                      <span className="text-base sm:text-lg font-bold text-green-400">${yourPayout}</span>
-                    </div>
+                  <div className="text-right ml-2 flex-shrink-0">
+                    <p className="text-white font-bold text-sm">${bet.amount}</p>
+                    <p className="text-green-400 text-xs">+${yourPayout}</p>
                   </div>
                 </div>
+              </div>
 
-                {/* Their Pick */}
-                <div className="bg-gray-700 rounded-lg p-3 sm:p-4">
-                  <div className="flex justify-between items-center mb-2 sm:mb-3">
-                    <h4 className="text-base sm:text-lg font-semibold text-white">Their Pick</h4>
-                    <span className="px-2 sm:px-3 py-1 bg-red-600 rounded-full text-xs sm:text-sm font-medium text-white">
-                      {formatBetType(bet.betType)}
-                    </span>
+              {/* Their Pick */}
+              <div className="bg-gray-800/50 border border-gray-600/50 rounded-lg p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-gray-400 uppercase tracking-wide">Their Pick</span>
+                  <span className="bg-gray-600 text-white px-2 py-1 rounded text-xs font-bold">
+                    {formatBetType(bet.betType)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-semibold text-sm truncate">
+                      {bet.betType === 'overUnder' 
+                        ? (isReceiver ? (bet.senderTeam === 'Over' ? 'Over' : 'Under') : (bet.receiverTeam === 'Over' ? 'Over' : 'Under'))
+                        : (isReceiver ? bet.senderTeam : bet.receiverTeam)
+                      }
+                    </p>
+                    <p className="text-gray-400 text-xs">
+                      {formatOdds(theirOdds, bet.betType)}
+                    </p>
                   </div>
-                  <div className="space-y-2 sm:space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-400 text-sm">Team</span>
-                      <span className="text-white font-medium text-sm">
-                        {bet.betType === 'overUnder' 
-                          ? (isReceiver ? (bet.senderTeam === 'Over' ? 'Over' : 'Under') : (bet.receiverTeam === 'Over' ? 'Over' : 'Under'))
-                          : (isReceiver ? bet.senderTeam : bet.receiverTeam)
-                        }
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-400 text-sm">Odds</span>
-                      <span className="text-base sm:text-lg font-bold text-blue-400">
-                        {formatOdds(theirOdds, bet.betType)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-400 text-sm">Risk</span>
-                      <span className="text-white font-medium">${bet.amount}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-400 text-sm">To Win</span>
-                      <span className="text-base sm:text-lg font-bold text-blue-400">${theirPayout}</span>
-                    </div>
+                  <div className="text-right ml-2 flex-shrink-0">
+                    <p className="text-white font-bold text-sm">${bet.amount}</p>
+                    <p className="text-blue-400 text-xs">+${theirPayout}</p>
                   </div>
                 </div>
               </div>

@@ -32,58 +32,63 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Cannot send friend request to yourself' }, { status: 400 })
     }
 
-    // Check for any existing relationship (pending or accepted) in either direction
-    const existingRelationship = await prisma.friendship.findFirst({
-      where: {
-        OR: [
-          {
-            AND: [
-              { senderId: userId },
-              { receiverId: receiver.id }
-            ]
-          },
-          {
-            AND: [
-              { senderId: receiver.id },
-              { receiverId: userId }
-            ]
-          }
-        ]
-      }
-    })
+    // Use transaction to prevent race conditions
+    const result = await prisma.$transaction(async (tx) => {
+      // Check for any existing relationship (pending or accepted) in either direction
+      const existingRelationship = await tx.friendship.findFirst({
+        where: {
+          OR: [
+            {
+              AND: [
+                { senderId: userId },
+                { receiverId: receiver.id }
+              ]
+            },
+            {
+              AND: [
+                { senderId: receiver.id },
+                { receiverId: userId }
+              ]
+            }
+          ]
+        }
+      })
 
-    if (existingRelationship) {
-      if (existingRelationship.status === 'PENDING') {
-        return NextResponse.json({ error: 'Friend request already sent' }, { status: 400 })
-      } else if (existingRelationship.status === 'ACCEPTED') {
-        return NextResponse.json({ error: "You're already friends" }, { status: 400 })
+      if (existingRelationship) {
+        if (existingRelationship.status === 'PENDING') {
+          throw new Error('Friend request already sent')
+        } else if (existingRelationship.status === 'ACCEPTED') {
+          throw new Error("You're already friends")
+        }
+        // If the relationship was REJECTED, we'll allow a new request
       }
-      // If the relationship was REJECTED, we'll allow a new request
-    }
 
-    // Create new friendship request
-    const friendship = await prisma.friendship.create({
-      data: {
-        senderId: userId,
-        receiverId: receiver.id,
-        status: 'PENDING'
-      }
-    })
-
-    // Create notification for receiver
-    await prisma.notification.create({
-      data: {
-        userId: receiver.id,
-        type: 'friend_request',
-        message: `${session.user.username} sent you a friend request`,
-        data: JSON.stringify({
+      // Create new friendship request
+      const friendship = await tx.friendship.create({
+        data: {
           senderId: userId,
-          senderUsername: session.user.username
-        })
-      }
+          receiverId: receiver.id,
+          status: 'PENDING'
+        }
+      })
+
+      // Create notification for receiver
+      await tx.notification.create({
+        data: {
+          userId: receiver.id,
+          type: 'friend_request',
+          message: `${session.user.username} sent you a friend request`,
+          data: JSON.stringify({
+            senderId: userId,
+            senderUsername: session.user.username
+          })
+        }
+      })
+
+      return friendship
     })
 
-    return NextResponse.json({ message: 'Friend request sent', friendship })
+    return NextResponse.json({ message: 'Friend request sent', friendship: result })
   } catch (error) {
     console.error('Error sending friend request:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

@@ -92,18 +92,9 @@ export default function BetDetailsPage() {
       })
 
       if (response.ok) {
+        // Trigger immediate updates
         window.dispatchEvent(new Event('balanceUpdate'))
         window.dispatchEvent(new Event('notificationUpdate'))
-        
-        // Also trigger a small delay to ensure the counter updates
-        setTimeout(() => {
-          window.dispatchEvent(new Event('notificationUpdate'))
-        }, 100)
-        
-        // Add another delay to ensure the notification is marked as read
-        setTimeout(() => {
-          window.dispatchEvent(new Event('notificationUpdate'))
-        }, 500)
         
         toast.success(action === 'accept' ? 'Bet accepted!' : 'Bet declined', {
           duration: 2000,

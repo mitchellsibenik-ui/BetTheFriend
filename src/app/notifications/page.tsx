@@ -82,10 +82,8 @@ export default function NotificationsPage() {
           }
         }
         
-        // Also trigger a small delay to ensure the counter updates
-        setTimeout(() => {
-          window.dispatchEvent(new Event('notificationUpdate'))
-        }, 100)
+        // Trigger immediate notification update
+        window.dispatchEvent(new Event('notificationUpdate'))
         
         toast.success(action === 'accept' ? 'Invitation accepted!' : 'Invitation declined', {
           duration: 2000,
@@ -118,10 +116,8 @@ export default function NotificationsPage() {
         await fetchNotifications() // Refresh notifications list
         window.dispatchEvent(new Event('notificationUpdate')) // Trigger counter update
         
-        // Also trigger a small delay to ensure the counter updates
-        setTimeout(() => {
-          window.dispatchEvent(new Event('notificationUpdate'))
-        }, 100)
+        // Trigger immediate notification update
+        window.dispatchEvent(new Event('notificationUpdate'))
         
         toast.success(accept ? 'Friend request accepted!' : 'Friend request declined', {
           duration: 2000,
@@ -161,10 +157,8 @@ export default function NotificationsPage() {
         window.dispatchEvent(new Event('balanceUpdate'))
         window.dispatchEvent(new Event('notificationUpdate'))
         
-        // Also trigger a small delay to ensure the counter updates
-        setTimeout(() => {
-          window.dispatchEvent(new Event('notificationUpdate'))
-        }, 100)
+        // Trigger immediate notification update
+        window.dispatchEvent(new Event('notificationUpdate'))
         
         toast.success(action === 'accept' ? 'Bet accepted!' : 'Bet declined', {
           duration: 2000,

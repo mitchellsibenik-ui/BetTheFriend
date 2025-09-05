@@ -72,21 +72,18 @@ export async function POST(request: Request) {
       )
     }
 
-    // Check if user has enough balance
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { balance: true }
-    })
-
-    if (!user || user.balance < parseInt(amount)) {
-      return NextResponse.json(
-        { error: 'Insufficient balance to place this bet' },
-        { status: 400 }
-      )
-    }
-
-    // Create the bet and deduct balance from sender
+    // Create the bet and deduct balance from sender (with balance check inside transaction)
     const bet = await prisma.$transaction(async (tx) => {
+      // Check if user has enough balance (INSIDE transaction to prevent race conditions)
+      const user = await tx.user.findUnique({
+        where: { id: session.user.id },
+        select: { balance: true }
+      })
+
+      if (!user || user.balance < parseInt(amount)) {
+        throw new Error('Insufficient balance to place this bet')
+      }
+
       // Prepare values for storage
       const finalSenderValue = betType === 'overUnder' && senderOdds 
         ? `${senderValue}|${senderOdds}` 
@@ -155,6 +152,17 @@ export async function POST(request: Request) {
     return NextResponse.json(bet)
   } catch (error) {
     console.error('Error creating bet:', error)
+    
+    // Handle specific error cases
+    if (error instanceof Error) {
+      if (error.message === 'Insufficient balance to place this bet') {
+        return NextResponse.json(
+          { error: 'Insufficient balance to place this bet' },
+          { status: 400 }
+        )
+      }
+    }
+    
     return NextResponse.json(
       { error: 'Failed to create bet' },
       { status: 500 }

@@ -2,6 +2,7 @@ import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { AuthProvider } from '@/components/AuthProvider'
+import { ChatNotificationProvider } from '@/contexts/ChatNotificationContext'
 import { Toaster } from 'react-hot-toast'
 import Navigation from '@/components/Navigation'
 
@@ -30,36 +31,38 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <AuthProvider>
-          <Navigation />
-          <main className="min-h-screen bg-gray-900">
-            {children}
-          </main>
-          <Toaster 
-            position="top-right" 
-            toastOptions={{
-              duration: 3000,
-              style: {
-                background: '#1f2937',
-                color: '#fff',
-                fontSize: '14px',
-                maxWidth: '90vw',
-              },
-              success: {
-                duration: 2000,
-                iconTheme: {
-                  primary: '#10b981',
-                  secondary: '#fff',
+          <ChatNotificationProvider>
+            <Navigation />
+            <main className="min-h-screen bg-gray-900">
+              {children}
+            </main>
+            <Toaster 
+              position="top-right" 
+              toastOptions={{
+                duration: 3000,
+                style: {
+                  background: '#1f2937',
+                  color: '#fff',
+                  fontSize: '14px',
+                  maxWidth: '90vw',
                 },
-              },
-              error: {
-                duration: 4000,
-                iconTheme: {
-                  primary: '#ef4444',
-                  secondary: '#fff',
+                success: {
+                  duration: 2000,
+                  iconTheme: {
+                    primary: '#10b981',
+                    secondary: '#fff',
+                  },
                 },
-              },
-            }}
-          />
+                error: {
+                  duration: 4000,
+                  iconTheme: {
+                    primary: '#ef4444',
+                    secondary: '#fff',
+                  },
+                },
+              }}
+            />
+          </ChatNotificationProvider>
         </AuthProvider>
       </body>
     </html>

@@ -28,6 +28,10 @@ model User {
   notifications Notification[]
   createdRooms ShowdownRoom[] @relation("CreatedRooms")
   showdownParticipations ShowdownParticipant[]
+  chatRooms1 ChatRoom[] @relation("ChatRoomUser1")
+  chatRooms2 ChatRoom[] @relation("ChatRoomUser2")
+  chatMessages ChatMessage[] @relation("ChatMessages")
+  chatReadStatus ChatReadStatus[] @relation("ChatReadStatus")
 }
 
 model Friendship {
@@ -175,4 +179,47 @@ model ShowdownPick {
   updatedAt     DateTime @updatedAt
 
   @@unique([participantId, gameId])
+}
+
+model ChatRoom {
+  id        String   @id @default(cuid())
+  user1Id   String
+  user2Id   String
+  user1     User     @relation("ChatRoomUser1", fields: [user1Id], references: [id])
+  user2     User     @relation("ChatRoomUser2", fields: [user2Id], references: [id])
+  messages  ChatMessage[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([user1Id, user2Id])
+  @@index([user1Id])
+  @@index([user2Id])
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  roomId    String
+  room      ChatRoom @relation(fields: [roomId], references: [id])
+  senderId  String
+  sender    User     @relation("ChatMessages", fields: [senderId], references: [id])
+  message   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  readStatus ChatReadStatus[]
+
+  @@index([roomId])
+  @@index([senderId])
+}
+
+model ChatReadStatus {
+  id        String      @id @default(cuid())
+  messageId String
+  userId    String
+  readAt    DateTime    @default(now())
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User        @relation("ChatReadStatus", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([messageId])
+  @@index([userId])
 } 
