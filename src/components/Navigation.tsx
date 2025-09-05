@@ -317,7 +317,10 @@ export default function Navigation() {
             
             {/* Mobile Menu Button */}
             <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              onClick={() => {
+                console.log('Toggling mobile menu, current state:', isMobileMenuOpen)
+                setIsMobileMenuOpen(!isMobileMenuOpen)
+              }}
               className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none"
             >
               <span className="sr-only">Open main menu</span>
@@ -401,7 +404,10 @@ export default function Navigation() {
                       ? 'bg-gray-800 text-white'
                       : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                   } block px-4 py-3 rounded-lg text-lg font-medium transition-colors duration-200`}
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={() => {
+                    console.log('Closing mobile menu and navigating to sportsbook')
+                    setIsMobileMenuOpen(false)
+                  }}
                 >
                   Sportsbook
                 </Link>
@@ -412,7 +418,10 @@ export default function Navigation() {
                       ? 'bg-gray-800 text-white'
                       : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                   } block px-4 py-3 rounded-lg text-lg font-medium transition-colors duration-200`}
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={() => {
+                    console.log('Closing mobile menu and navigating to showdown')
+                    setIsMobileMenuOpen(false)
+                  }}
                 >
                   Showdown
                 </Link>
@@ -423,7 +432,10 @@ export default function Navigation() {
                       ? 'bg-gray-800 text-white'
                       : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                   } block px-4 py-3 rounded-lg text-lg font-medium transition-colors duration-200`}
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={() => {
+                    console.log('Closing mobile menu and navigating to my-bets')
+                    setIsMobileMenuOpen(false)
+                  }}
                 >
                   My Bets
                 </Link>
@@ -434,7 +446,10 @@ export default function Navigation() {
                       ? 'bg-gray-800 text-white'
                       : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                   } block px-4 py-3 rounded-lg text-lg font-medium transition-colors duration-200`}
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={() => {
+                    console.log('Closing mobile menu and navigating to social')
+                    setIsMobileMenuOpen(false)
+                  }}
                 >
                   Friends
                 </Link>
