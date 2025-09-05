@@ -434,10 +434,7 @@ export default function Navigation() {
                       ? 'bg-gray-800 text-white'
                       : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                   } block px-4 py-3 rounded-lg text-lg font-medium transition-colors duration-200`}
-                  onClick={() => {
-                    console.log('Closing mobile menu and navigating to social')
-                    setIsMobileMenuOpen(false)
-                  }}
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Friends
                 </Link>

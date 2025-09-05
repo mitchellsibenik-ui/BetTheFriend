@@ -8,6 +8,7 @@ export const stripe = process.env.STRIPE_SECRET_KEY
     })
   : null
 
+  ,
 export const getStripePublishableKey = () => {
   return process.env.STRIPE_PUBLISHABLE_KEY || ''
 }

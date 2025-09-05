@@ -489,12 +489,8 @@ export default function SocialPage() {
               <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
               <div className="text-gray-400 text-lg">Loading your friends...</div>
             </div>
-        </div>
-      ) : isLoading ? (
-        <div className="space-y-4">
-          <SkeletonLoader type="card" count={3} />
-        </div>
-      ) : friends.length === 0 ? (
+          </div>
+        ) : friends.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-r from-gray-600 to-gray-700 rounded-full flex items-center justify-center">
               <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -576,7 +572,7 @@ export default function SocialPage() {
             {/* Scrollable Friends List - Mobile Optimized */}
             <div className="max-h-80 sm:max-h-none overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
               <div className="sm:divide-y sm:divide-white/10">
-            {friends.map((friend, index) => (
+                {friends.map((friend, index) => (
                   <div key={friend.id} className="group hover:bg-white/5 transition-all duration-300 hover:scale-[1.02] sm:mb-0 mb-3 sm:mb-0 last:mb-0">
                     {/* Desktop Layout - Compact */}
                     <div className="hidden sm:grid grid-cols-12 gap-4 p-4">
@@ -707,18 +703,17 @@ export default function SocialPage() {
                                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" title={`${getUnreadCount(friend.id)} unread messages`}></div>
                               )}
                             </div>
-                              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                                index === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-yellow-900' :
-                                index === 1 ? 'bg-gradient-to-r from-gray-300 to-gray-500 text-gray-800' :
-                                index === 2 ? 'bg-gradient-to-r from-amber-600 to-amber-800 text-amber-100' :
-                                'bg-gradient-to-r from-gray-600 to-gray-700 text-gray-300'
-                              }`}>
-                                #{index + 1}
-                              </div>
-                            </div>
                             <div className="text-sm text-gray-400 mt-0.5">
                               {friend.stats.wins}-{friend.stats.losses} • {friend.stats.totalBets > 0 ? `${Math.round((friend.stats.wins / friend.stats.totalBets) * 100)}%` : '0%'} win rate
                             </div>
+                          </div>
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                            index === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-yellow-900' :
+                            index === 1 ? 'bg-gradient-to-r from-gray-300 to-gray-500 text-gray-800' :
+                            index === 2 ? 'bg-gradient-to-r from-amber-600 to-amber-800 text-amber-100' :
+                            'bg-gradient-to-r from-gray-600 to-gray-700 text-gray-300'
+                          }`}>
+                            #{index + 1}
                           </div>
                         </div>
                         
@@ -776,9 +771,9 @@ export default function SocialPage() {
                           <span className="text-sm font-medium">Remove</span>
                         </button>
                       </div>
-                </div>
-              </div>
-            ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
