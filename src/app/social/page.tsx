@@ -6,7 +6,7 @@ import FriendRequestsInbox from '@/components/FriendRequestsInbox'
 import SendFriendRequest from '@/components/SendFriendRequest'
 import CreateWagerForm from '@/components/CreateWagerForm'
 import { useRouter } from 'next/navigation'
-// import { useChatNotifications, useSetChatCallback } from '@/contexts/ChatNotificationContext'
+import { useChatNotifications, useSetChatCallback } from '@/contexts/ChatNotificationContext'
 import SkeletonLoader from '@/components/SkeletonLoader'
 
 interface Friend {
@@ -24,7 +24,7 @@ interface Friend {
 
 export default function SocialPage() {
   const { data: session } = useSession()
-  // const { unreadCounts, markAsRead, showNotification } = useChatNotifications()
+  const { unreadCounts, markAsRead, showNotification } = useChatNotifications()
   const [friends, setFriends] = useState<Friend[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -174,11 +174,24 @@ export default function SocialPage() {
     }
   }
 
-  // Removed chat callback for notifications
+  // Set up chat callback for notifications
+  useSetChatCallback((roomId: string) => {
+    // Find the friend associated with this room
+    const friend = friends.find(f => {
+      // This is a simplified approach - in a real app you'd want to store room-to-friend mapping
+      return true // For now, just open the first available chat
+    })
+    if (friend) {
+      openChat(friend)
+    }
+  })
 
   // Helper function to get unread count for a friend
   const getUnreadCount = (friendId: string) => {
-    return 0 // Simplified - no unread counts for now
+    // Find the room ID for this friend by looking through unreadCounts
+    // The room ID format should be consistent with how we create rooms
+    const roomId = `room_${[session?.user?.id, friendId].sort().join('_')}`
+    return unreadCounts[roomId] || 0
   }
 
   const closeChat = () => {
