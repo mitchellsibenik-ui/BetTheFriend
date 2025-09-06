@@ -347,70 +347,28 @@ export default function Navigation() {
           </div>
         </div>
 
-        {/* Mobile Tab Bar - TEST WITH CLICK HANDLERS */}
+        {/* Mobile Tab Bar - SIMPLE ANCHOR TAGS */}
         {status === 'authenticated' && (
-          <div className="md:hidden bg-gray-800 border-t border-gray-700 fixed bottom-0 left-0 right-0" style={{ zIndex: 99999 }}>
+          <div className="md:hidden bg-gray-800 border-t border-gray-700 fixed bottom-0 left-0 right-0 z-50">
             <div className="flex items-center justify-around py-3">
-              <button 
-                onClick={() => {
-                  console.log('HOME CLICKED')
-                  window.location.href = '/'
-                }}
-                className="flex flex-col items-center py-2 px-2 w-full text-gray-400 hover:text-white bg-red-500"
-                style={{ pointerEvents: 'auto', minHeight: '60px' }}
-              >
+              <a href="/" className="flex flex-col items-center py-2 px-2 w-full text-gray-400 hover:text-white">
                 <div className="text-xs font-medium">HOME</div>
-              </button>
-              <button 
-                onClick={() => {
-                  console.log('SPORTS CLICKED')
-                  window.location.href = '/sportsbook'
-                }}
-                className="flex flex-col items-center py-2 px-2 w-full text-gray-400 hover:text-white bg-blue-500"
-                style={{ pointerEvents: 'auto', minHeight: '60px' }}
-              >
+              </a>
+              <a href="/sportsbook" className="flex flex-col items-center py-2 px-2 w-full text-gray-400 hover:text-white">
                 <div className="text-xs font-medium">SPORTS</div>
-              </button>
-              <button 
-                onClick={() => {
-                  console.log('SHOWDOWN CLICKED')
-                  window.location.href = '/showdown'
-                }}
-                className="flex flex-col items-center py-2 px-2 w-full text-gray-400 hover:text-white bg-green-500"
-                style={{ pointerEvents: 'auto', minHeight: '60px' }}
-              >
+              </a>
+              <a href="/showdown" className="flex flex-col items-center py-2 px-2 w-full text-gray-400 hover:text-white">
                 <div className="text-xs font-medium">SHOWDOWN</div>
-              </button>
-              <button 
-                onClick={() => {
-                  console.log('MY BETS CLICKED')
-                  window.location.href = '/my-bets'
-                }}
-                className="flex flex-col items-center py-2 px-2 w-full text-gray-400 hover:text-white bg-yellow-500"
-                style={{ pointerEvents: 'auto', minHeight: '60px' }}
-              >
+              </a>
+              <a href="/my-bets" className="flex flex-col items-center py-2 px-2 w-full text-gray-400 hover:text-white">
                 <div className="text-xs font-medium">MY BETS</div>
-              </button>
-              <button 
-                onClick={() => {
-                  console.log('FRIENDS CLICKED')
-                  window.location.href = '/social'
-                }}
-                className="flex flex-col items-center py-2 px-2 w-full text-gray-400 hover:text-white bg-purple-500"
-                style={{ pointerEvents: 'auto', minHeight: '60px' }}
-              >
+              </a>
+              <a href="/social" className="flex flex-col items-center py-2 px-2 w-full text-gray-400 hover:text-white">
                 <div className="text-xs font-medium">FRIENDS</div>
-              </button>
-              <button 
-                onClick={() => {
-                  console.log('ALERTS CLICKED')
-                  window.location.href = '/notifications'
-                }}
-                className="flex flex-col items-center py-2 px-2 w-full text-gray-400 hover:text-white bg-pink-500"
-                style={{ pointerEvents: 'auto', minHeight: '60px' }}
-              >
+              </a>
+              <a href="/notifications" className="flex flex-col items-center py-2 px-2 w-full text-gray-400 hover:text-white">
                 <div className="text-xs font-medium">ALERTS</div>
-              </button>
+              </a>
             </div>
           </div>
         )}
