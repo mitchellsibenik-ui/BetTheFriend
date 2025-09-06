@@ -88,37 +88,12 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
       }
     }
 
-    // Poll only when user is active and not navigating
-    let isNavigating = false
-    let lastActivity = Date.now()
+    // Poll only once when component mounts - no continuous polling
+    pollUnreadMessages()
     
-    // Track navigation to pause polling
-    const handleNavigation = () => {
-      isNavigating = true
-      lastActivity = Date.now()
-      setTimeout(() => { isNavigating = false }, 2000) // Resume after 2 seconds
-    }
-    
-    // Listen for navigation events
-    window.addEventListener('beforeunload', handleNavigation)
-    window.addEventListener('popstate', handleNavigation)
-    
-    // Poll only when not navigating and user is active
-    const smartPoll = () => {
-      if (!isNavigating && (Date.now() - lastActivity) < 30000) {
-        pollUnreadMessages()
-      }
-    }
-    
-    // Poll every 2 minutes (much less frequent) and only when active
-    smartPoll()
-    const interval = setInterval(smartPoll, 120000)
-    
-    // Cleanup
+    // No interval - just poll once to avoid interference
     return () => {
-      clearInterval(interval)
-      window.removeEventListener('beforeunload', handleNavigation)
-      window.removeEventListener('popstate', handleNavigation)
+      // No cleanup needed since no interval
     }
   }, [session?.user?.id])
 
