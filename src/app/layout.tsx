@@ -5,7 +5,6 @@ import { AuthProvider } from '@/components/AuthProvider'
 import { ChatNotificationProvider } from '@/contexts/ChatNotificationContext'
 import { Toaster } from 'react-hot-toast'
 import Navigation from '@/components/Navigation'
-import SimpleMobileNav from '@/components/SimpleMobileNav'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -37,7 +36,6 @@ export default function RootLayout({
             <main className="min-h-screen bg-gray-900 pb-20 md:pb-0">
               {children}
             </main>
-            <SimpleMobileNav />
             <Toaster 
               position="top-right" 
               toastOptions={{
