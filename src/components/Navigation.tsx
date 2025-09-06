@@ -156,15 +156,12 @@ export default function Navigation() {
   }
 
   const handleBack = () => {
-    if (window.history.length > 1) {
-      router.back()
-    } else {
-      router.push('/')
-    }
+    // Always try to go back first, fallback to home
+    router.back()
   }
 
-  // Check if we should show the back button (not on home page)
-  const shouldShowBackButton = pathname !== '/' && pathname !== '/sportsbook'
+  // Check if we should show the back button (not on home page, but show on all other pages)
+  const shouldShowBackButton = pathname !== '/'
 
   if (status === 'loading' || isLoading) {
     return (
@@ -385,6 +382,20 @@ export default function Navigation() {
         {status === 'authenticated' && (
           <div className="md:hidden bg-gray-800 border-t border-gray-700 fixed bottom-0 left-0 right-0 z-50">
             <div className="flex items-center justify-around py-2" style={{ minHeight: '60px' }}>
+              <Link
+                href="/"
+                className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors duration-200 ${
+                  pathname === '/'
+                    ? 'text-blue-400 bg-blue-900/20'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                }`}
+              >
+                <svg className="h-5 w-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                <span className="text-xs font-medium">Home</span>
+              </Link>
+              
               <Link
                 href="/sportsbook"
                 className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors duration-200 ${
