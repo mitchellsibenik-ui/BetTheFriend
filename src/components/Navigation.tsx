@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { useState, useEffect } from 'react'
 import { Users, ArrowLeft } from 'lucide-react'
-import BalanceDisplay from './BalanceDisplay'
+// import BalanceDisplay from './BalanceDisplay'
 
 export default function Navigation() {
   const { data: session, status } = useSession()
@@ -47,72 +47,9 @@ export default function Navigation() {
     }
   }, [isMobileMenuOpen])
 
-  const fetchNotificationCount = async () => {
-    if (status !== 'authenticated') return
+  // Removed data fetching functions that were interfering with navigation
 
-    try {
-      const response = await fetch('/api/notifications', {
-        cache: 'no-store', // Prevent caching
-        headers: {
-          'Cache-Control': 'no-cache'
-        }
-      })
-      if (!response.ok) {
-        throw new Error('Failed to fetch notifications')
-      }
-
-      const data = await response.json()
-      const unreadCount = data.notifications.filter((n: any) => !n.read).length
-      console.log('Updated notification count:', unreadCount)
-      setNotificationCount(unreadCount)
-      
-      // Store in localStorage to prevent stale data
-      localStorage.setItem('notificationCount', unreadCount.toString())
-    } catch (error) {
-      console.error('Error fetching notification count:', error)
-      setNotificationCount(0)
-      localStorage.removeItem('notificationCount')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const forceRefreshNotifications = async () => {
-    console.log('Force refreshing notifications...')
-    // Clear any cached data
-    localStorage.removeItem('notificationCount')
-    setNotificationCount(0)
-    await fetchNotificationCount()
-  }
-
-  const fetchUserBalance = async () => {
-    if (status !== 'authenticated') return
-
-    try {
-      const response = await fetch('/api/user/balance')
-      if (response.ok) {
-        const data = await response.json()
-        console.log('Updated user balance:', data.balance)
-        setUserBalance(data.balance)
-      }
-    } catch (error) {
-      console.error('Error fetching user balance:', error)
-    }
-  }
-
-  useEffect(() => {
-    if (status === 'authenticated') {
-      // Clear any stale cached data on mount
-      localStorage.removeItem('notificationCount')
-      // Removed data fetching that was interfering with navigation
-      // Removed polling interval that was interfering with navigation
-    } else {
-      setNotificationCount(0)
-      setUserBalance(null)
-      setIsLoading(false)
-      localStorage.removeItem('notificationCount')
-    }
-  }, [status])
+  // Removed useEffect that was interfering with navigation
 
   // Removed event listener that was interfering with navigation
 
@@ -239,11 +176,9 @@ export default function Navigation() {
                 </Link>
                 <div className="ml-4 flex items-center gap-4">
                   <span className="text-gray-300">{session?.user?.username}</span>
-                  <BalanceDisplay 
-                    balance={userBalance || 0} 
-                    showPaymentButtons={false}
-                    onBalanceUpdate={setUserBalance}
-                  />
+                  <div className="text-green-400 font-bold">
+                    ${userBalance?.toFixed(2) || '0.00'}
+                  </div>
                   <button
                     onClick={handleLogout}
                     className="px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
@@ -271,11 +206,9 @@ export default function Navigation() {
             {status === 'authenticated' && (
               <>
                 {/* Mobile Balance Display */}
-                <BalanceDisplay 
-                  balance={userBalance || 0} 
-                  showPaymentButtons={false}
-                  onBalanceUpdate={setUserBalance}
-                />
+                <div className="text-green-400 font-bold text-sm">
+                  ${userBalance?.toFixed(2) || '0.00'}
+                </div>
                 
                 {/* Mobile Notifications */}
                 <Link
