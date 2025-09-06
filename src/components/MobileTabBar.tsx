@@ -2,67 +2,16 @@
 
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { useState, useEffect } from 'react'
-import { forceNavigate, resetPageState } from '@/utils/navigation'
 
 export default function MobileTabBar() {
   const { status } = useSession()
   const pathname = usePathname()
-  const [notificationCount, setNotificationCount] = useState(0)
 
-  // Simple notification count fetch - isolated from main navigation
-  useEffect(() => {
-    if (status !== 'authenticated') return
-
-    const fetchNotifications = async () => {
-      try {
-        const response = await fetch('/api/notifications', {
-          cache: 'no-store',
-          headers: { 'Cache-Control': 'no-cache' }
-        })
-        if (response.ok) {
-          const data = await response.json()
-          const unreadCount = data.notifications.filter((n: any) => !n.read).length
-          setNotificationCount(unreadCount)
-        }
-      } catch (error) {
-        console.error('Error fetching notifications:', error)
-        setNotificationCount(0)
-      }
-    }
-
-    fetchNotifications()
-  }, [status])
-
-  // Listen for navigation reset events
-  useEffect(() => {
-    const handleNavigationReset = () => {
-      console.log('Navigation reset event received')
-      // Reset any local state if needed
-      setNotificationCount(0)
-    }
-
-    window.addEventListener('navigation-reset', handleNavigationReset)
-    
-    return () => {
-      window.removeEventListener('navigation-reset', handleNavigationReset)
-    }
-  }, [])
-
-  // Bulletproof navigation function
+  // Simple, direct navigation - no state, no polling, no effects
   const navigateTo = (path: string) => {
     console.log(`Navigating to: ${path}`)
-    try {
-      // Reset page state first
-      resetPageState()
-      
-      // Use force navigation utility
-      forceNavigate(path)
-    } catch (error) {
-      console.error('Navigation error:', error)
-      // Fallback: try direct assignment
-      window.location.assign(path)
-    }
+    // Direct navigation - no state management, no cleanup needed
+    window.location.href = path
   }
 
   if (status !== 'authenticated') return null
@@ -145,25 +94,20 @@ export default function MobileTabBar() {
           <span className="text-xs font-medium">Friends</span>
         </button>
         
-        <button
-          className={`flex flex-col items-center py-2 px-2 rounded-lg transition-colors w-full relative ${
-            pathname === '/notifications'
-              ? 'text-blue-400 bg-blue-900/20'
-              : 'text-gray-400 hover:text-white active:bg-gray-700'
-          }`}
-          onClick={() => navigateTo('/notifications')}
-          onTouchStart={() => {}}
-        >
-          <svg className="h-6 w-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-          </svg>
-          <span className="text-xs font-medium">Alerts</span>
-          {notificationCount > 0 && (
-            <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
-              {notificationCount}
-            </span>
-          )}
-        </button>
+              <button
+                className={`flex flex-col items-center py-2 px-2 rounded-lg transition-colors w-full ${
+                  pathname === '/notifications'
+                    ? 'text-blue-400 bg-blue-900/20'
+                    : 'text-gray-400 hover:text-white active:bg-gray-700'
+                }`}
+                onClick={() => navigateTo('/notifications')}
+                onTouchStart={() => {}}
+              >
+                <svg className="h-6 w-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                <span className="text-xs font-medium">Alerts</span>
+              </button>
       </div>
     </div>
   )
