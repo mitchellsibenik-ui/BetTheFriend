@@ -31,38 +31,36 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <AuthProvider>
-          <ChatNotificationProvider>
-            <Navigation />
-            <main className="min-h-screen bg-gray-900 pb-20 md:pb-0">
-              {children}
-            </main>
-            <Toaster 
-              position="top-right" 
-              toastOptions={{
-                duration: 3000,
-                style: {
-                  background: '#1f2937',
-                  color: '#fff',
-                  fontSize: '14px',
-                  maxWidth: '90vw',
+          <Navigation />
+          <main className="min-h-screen bg-gray-900 pb-20 md:pb-0">
+            {children}
+          </main>
+          <Toaster 
+            position="top-right" 
+            toastOptions={{
+              duration: 3000,
+              style: {
+                background: '#1f2937',
+                color: '#fff',
+                fontSize: '14px',
+                maxWidth: '90vw',
+              },
+              success: {
+                duration: 2000,
+                iconTheme: {
+                  primary: '#10b981',
+                  secondary: '#fff',
                 },
-                success: {
-                  duration: 2000,
-                  iconTheme: {
-                    primary: '#10b981',
-                    secondary: '#fff',
-                  },
+              },
+              error: {
+                duration: 4000,
+                iconTheme: {
+                  primary: '#ef4444',
+                  secondary: '#fff',
                 },
-                error: {
-                  duration: 4000,
-                  iconTheme: {
-                    primary: '#ef4444',
-                    secondary: '#fff',
-                  },
-                },
-              }}
-            />
-          </ChatNotificationProvider>
+              },
+            }}
+          />
         </AuthProvider>
       </body>
     </html>
