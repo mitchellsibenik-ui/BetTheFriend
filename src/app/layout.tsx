@@ -33,7 +33,7 @@ export default function RootLayout({
         <AuthProvider>
           <ChatNotificationProvider>
             <Navigation />
-            <main className="min-h-screen bg-gray-900 pb-16 md:pb-0">
+            <main className="min-h-screen bg-gray-900 pb-20 md:pb-0 relative z-10">
               {children}
             </main>
             <Toaster 
