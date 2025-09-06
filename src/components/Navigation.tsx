@@ -4,17 +4,13 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { useState, useEffect } from 'react'
-import { Users, ArrowLeft } from 'lucide-react'
-import BalanceDisplay from './BalanceDisplay'
+import { ArrowLeft } from 'lucide-react'
 
 export default function Navigation() {
   const { data: session, status } = useSession()
   const pathname = usePathname()
   const router = useRouter()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [notificationCount, setNotificationCount] = useState(0)
-  const [isLoading, setIsLoading] = useState(false)
-  const [userBalance, setUserBalance] = useState<number | null>(null)
 
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
@@ -24,7 +20,6 @@ export default function Navigation() {
       document.body.style.overflow = 'unset'
     }
     
-    // Cleanup on unmount
     return () => {
       document.body.style.overflow = 'unset'
     }
@@ -47,97 +42,29 @@ export default function Navigation() {
     }
   }, [isMobileMenuOpen])
 
-  const fetchNotificationCount = async () => {
-    if (status !== 'authenticated') return
-
-    try {
-      const response = await fetch('/api/notifications', {
-        cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache'
-        }
-      })
-      if (!response.ok) {
-        throw new Error(`Failed to fetch notifications: ${response.status}`)
-      }
-
-      const data = await response.json()
-      const unreadCount = data.notifications.filter((n: any) => !n.read).length
-      setNotificationCount(unreadCount)
-    } catch (error) {
-      console.error('Error fetching notification count:', error)
-      setNotificationCount(0)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const forceRefreshNotifications = async () => {
-    console.log('Force refreshing notifications...')
-    // Clear any cached data
-    localStorage.removeItem('notificationCount')
-    setNotificationCount(0)
-    await fetchNotificationCount()
-  }
-
-  const fetchUserBalance = async () => {
-    if (status !== 'authenticated') return
-
-    try {
-      const response = await fetch('/api/user/balance')
-      if (response.ok) {
-        const data = await response.json()
-        setUserBalance(data.balance)
-      }
-    } catch (error) {
-      console.error('Error fetching user balance:', error)
-    }
-  }
-
+  // Close mobile menu when pathname changes
   useEffect(() => {
-    if (status === 'authenticated') {
-      // Only fetch data once on mount to avoid interference
-      fetchUserBalance()
-      fetchNotificationCount()
-    } else {
-      setNotificationCount(0)
-      setUserBalance(null)
-      setIsLoading(false)
-    }
-  }, [status])
+    setIsMobileMenuOpen(false)
+  }, [pathname])
 
   const handleLogout = async () => {
-    try {
-      await signOut({ callbackUrl: '/' })
-    } catch (error) {
-      console.error('Error during logout:', error)
-    }
+    await signOut({ callbackUrl: '/' })
   }
 
   const handleBack = () => {
     router.back()
   }
 
-  // Check if we should show the back button (not on home page, but show on all other pages)
+  // Check if we should show the back button
   const shouldShowBackButton = pathname !== '/'
 
-  // Close mobile menu when pathname changes
-  useEffect(() => {
-    setIsMobileMenuOpen(false)
-  }, [pathname])
-
-  // Debug logging
-  useEffect(() => {
-    console.log('Navigation status:', status, 'pathname:', pathname, 'isLoading:', isLoading)
-  }, [status, pathname, isLoading])
-
-  if (status === 'loading' || isLoading) {
+  if (status === 'loading') {
     return (
       <nav className="bg-gray-800 border-b border-gray-700">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
-              <Link href="/" className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 font-bold text-xl hover:from-blue-500 hover:to-purple-600 transition-all duration-300">
+              <Link href="/" className="text-white font-bold text-xl">
                 BetTheFriend
               </Link>
             </div>
@@ -165,18 +92,18 @@ export default function Navigation() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:block">
-              <div className="ml-10 flex items-baseline space-x-4">
-                <Link
-                  href="/sportsbook"
+            <div className="ml-10 flex items-baseline space-x-4">
+              <Link
+                href="/sportsbook"
                 className={`${
-                    pathname === '/sportsbook'
+                  pathname === '/sportsbook'
                     ? 'bg-gray-800 text-white'
-                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                 } px-3 py-2 rounded-md text-sm font-medium`}
-                >
-                  Sportsbook
-                </Link>
-                <Link
+              >
+                Sportsbook
+              </Link>
+              <Link
                 href="/showdown"
                 className={`${
                   pathname === '/showdown'
@@ -185,17 +112,17 @@ export default function Navigation() {
                 } px-3 py-2 rounded-md text-sm font-medium`}
               >
                 Showdown
-                </Link>
-                <Link
-                  href="/my-bets"
+              </Link>
+              <Link
+                href="/my-bets"
                 className={`${
-                    pathname === '/my-bets'
+                  pathname === '/my-bets'
                     ? 'bg-gray-800 text-white'
-                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                 } px-3 py-2 rounded-md text-sm font-medium`}
-                >
-                  My Bets
-                </Link>
+              >
+                My Bets
+              </Link>
               <Link
                 href="/social"
                 className={`${
@@ -206,7 +133,7 @@ export default function Navigation() {
               >
                 Friends
               </Link>
-              </div>
+            </div>
           </div>
 
           {/* Desktop User Info */}
@@ -230,17 +157,9 @@ export default function Navigation() {
                       d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                     />
                   </svg>
-                  {notificationCount > 0 && (
-                    <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
-                      {notificationCount}
-                    </span>
-                  )}
                 </Link>
                 <div className="ml-4 flex items-center gap-4">
                   <span className="text-gray-300">{session?.user?.username}</span>
-                  <div className="text-green-400 font-bold">
-                    ${userBalance?.toFixed(2) || '0.00'}
-                  </div>
                   <button
                     onClick={handleLogout}
                     className="px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
@@ -252,7 +171,7 @@ export default function Navigation() {
             )}
           </div>
 
-          {/* Mobile: Back Button + Notifications + Balance + Menu Button */}
+          {/* Mobile: Back Button + Menu Button */}
           <div className="md:hidden flex items-center space-x-2">
             {/* Mobile Back Button */}
             {shouldShowBackButton && (
@@ -263,40 +182,6 @@ export default function Navigation() {
               >
                 <ArrowLeft className="h-5 w-5" />
               </button>
-            )}
-            
-            {status === 'authenticated' && (
-              <>
-                {/* Mobile Balance Display */}
-                <div className="text-green-400 font-bold text-sm">
-                  ${userBalance?.toFixed(2) || '0.00'}
-                </div>
-                
-                {/* Mobile Notifications */}
-                <Link
-                  href="/notifications"
-                  className="relative p-1"
-                >
-                  <svg
-                    className="h-5 w-5 text-gray-300"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                    />
-                  </svg>
-                  {notificationCount > 0 && (
-                    <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
-                      {notificationCount}
-                    </span>
-                  )}
-                </Link>
-              </>
             )}
             
             {/* Mobile Menu Button */}
@@ -342,7 +227,7 @@ export default function Navigation() {
           </div>
         </div>
 
-        {/* Mobile Tab Bar - Using Next.js Link components */}
+        {/* Mobile Tab Bar */}
         {status === 'authenticated' && (
           <div className="md:hidden bg-gray-800 border-t border-gray-700 fixed bottom-0 left-0 right-0 z-50">
             <div className="flex items-center justify-around py-3">
@@ -373,7 +258,6 @@ export default function Navigation() {
           <div 
             className="md:hidden fixed inset-0 z-50 bg-gray-900"
             onClick={(e) => {
-              // Close menu when clicking on backdrop
               if (e.target === e.currentTarget) {
                 setIsMobileMenuOpen(false)
               }
@@ -399,7 +283,6 @@ export default function Navigation() {
                 {status === 'authenticated' && (
                   <div className="px-3 py-4 border-b border-gray-700 mb-4">
                     <div className="text-white font-medium text-lg">{session?.user?.username}</div>
-                    <div className="text-green-400 text-base">Balance: ${userBalance?.toFixed(2) || '0.00'}</div>
                   </div>
                 )}
                 
@@ -454,15 +337,10 @@ export default function Navigation() {
                     pathname === '/notifications'
                       ? 'bg-gray-800 text-white'
                       : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                  } block px-4 py-3 rounded-lg text-lg font-medium transition-colors duration-200 relative`}
+                  } block px-4 py-3 rounded-lg text-lg font-medium transition-colors duration-200`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Notifications
-                  {notificationCount > 0 && (
-                    <span className="ml-3 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
-                      {notificationCount}
-                    </span>
-                  )}
                 </Link>
                 
                 {/* Mobile Actions */}
@@ -486,4 +364,4 @@ export default function Navigation() {
       </div>
     </nav>
   )
-} 
+}
