@@ -51,9 +51,8 @@ export default function Navigation() {
     if (status !== 'authenticated') return
 
     try {
-      console.log('Fetching notification count...')
       const response = await fetch('/api/notifications', {
-        cache: 'no-store', // Prevent caching
+        cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache'
         }
@@ -64,15 +63,10 @@ export default function Navigation() {
 
       const data = await response.json()
       const unreadCount = data.notifications.filter((n: any) => !n.read).length
-      console.log('Updated notification count:', unreadCount)
       setNotificationCount(unreadCount)
-      
-      // Store in localStorage to prevent stale data
-      localStorage.setItem('notificationCount', unreadCount.toString())
     } catch (error) {
       console.error('Error fetching notification count:', error)
       setNotificationCount(0)
-      localStorage.removeItem('notificationCount')
     } finally {
       setIsLoading(false)
     }
@@ -90,14 +84,10 @@ export default function Navigation() {
     if (status !== 'authenticated') return
 
     try {
-      console.log('Fetching user balance...')
       const response = await fetch('/api/user/balance')
       if (response.ok) {
         const data = await response.json()
-        console.log('Updated user balance:', data.balance)
         setUserBalance(data.balance)
-      } else {
-        console.error('Failed to fetch user balance:', response.status, response.statusText)
       }
     } catch (error) {
       console.error('Error fetching user balance:', error)
@@ -106,50 +96,14 @@ export default function Navigation() {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      // Clear any stale cached data on mount
-      localStorage.removeItem('notificationCount')
-      // Fetch initial data
+      // Only fetch data once on mount to avoid interference
       fetchUserBalance()
       fetchNotificationCount()
     } else {
       setNotificationCount(0)
       setUserBalance(null)
       setIsLoading(false)
-      localStorage.removeItem('notificationCount')
     }
-  }, [status])
-
-  // Add event listeners for balance and notification updates
-  useEffect(() => {
-    if (status !== 'authenticated') return
-
-    const handleBalanceUpdate = (event: CustomEvent) => {
-      setUserBalance(event.detail.balance)
-    }
-
-    const handleNotificationUpdate = (event: CustomEvent) => {
-      setNotificationCount(event.detail.count)
-    }
-
-    // Listen for custom events
-    window.addEventListener('balanceUpdated', handleBalanceUpdate as EventListener)
-    window.addEventListener('notificationsUpdated', handleNotificationUpdate as EventListener)
-
-    return () => {
-      window.removeEventListener('balanceUpdated', handleBalanceUpdate as EventListener)
-      window.removeEventListener('notificationsUpdated', handleNotificationUpdate as EventListener)
-    }
-  }, [status])
-
-  // Periodic refresh for notifications (less frequent to avoid interference)
-  useEffect(() => {
-    if (status !== 'authenticated') return
-
-    const interval = setInterval(() => {
-      fetchNotificationCount()
-    }, 60000) // Refresh every minute instead of more frequently
-
-    return () => clearInterval(interval)
   }, [status])
 
   const handleLogout = async () => {
@@ -161,19 +115,7 @@ export default function Navigation() {
   }
 
   const handleBack = () => {
-    try {
-      // Check if there's history to go back to
-      if (window.history.length > 1) {
-        router.back()
-      } else {
-        // If no history, go to home
-        router.push('/')
-      }
-    } catch (error) {
-      console.error('Error navigating back:', error)
-      // Fallback to home if back navigation fails
-      router.push('/')
-    }
+    router.back()
   }
 
   // Check if we should show the back button (not on home page, but show on all other pages)
@@ -183,6 +125,11 @@ export default function Navigation() {
   useEffect(() => {
     setIsMobileMenuOpen(false)
   }, [pathname])
+
+  // Debug logging
+  useEffect(() => {
+    console.log('Navigation status:', status, 'pathname:', pathname, 'isLoading:', isLoading)
+  }, [status, pathname, isLoading])
 
   if (status === 'loading' || isLoading) {
     return (
@@ -291,11 +238,9 @@ export default function Navigation() {
                 </Link>
                 <div className="ml-4 flex items-center gap-4">
                   <span className="text-gray-300">{session?.user?.username}</span>
-                  <BalanceDisplay 
-                    balance={userBalance || 0} 
-                    showPaymentButtons={false}
-                    onBalanceUpdate={setUserBalance}
-                  />
+                  <div className="text-green-400 font-bold">
+                    ${userBalance?.toFixed(2) || '0.00'}
+                  </div>
                   <button
                     onClick={handleLogout}
                     className="px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
@@ -323,11 +268,9 @@ export default function Navigation() {
             {status === 'authenticated' && (
               <>
                 {/* Mobile Balance Display */}
-                <BalanceDisplay 
-                  balance={userBalance || 0} 
-                  showPaymentButtons={false}
-                  onBalanceUpdate={setUserBalance}
-                />
+                <div className="text-green-400 font-bold text-sm">
+                  ${userBalance?.toFixed(2) || '0.00'}
+                </div>
                 
                 {/* Mobile Notifications */}
                 <Link
@@ -358,10 +301,7 @@ export default function Navigation() {
             
             {/* Mobile Menu Button */}
             <button
-              onClick={() => {
-                console.log('Mobile menu button clicked, current state:', isMobileMenuOpen)
-                setIsMobileMenuOpen(!isMobileMenuOpen)
-              }}
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none"
             >
               <span className="sr-only">Open main menu</span>
