@@ -5,6 +5,7 @@ import { AuthProvider } from '@/components/AuthProvider'
 import { ChatNotificationProvider } from '@/contexts/ChatNotificationContext'
 import { Toaster } from 'react-hot-toast'
 import Navigation from '@/components/Navigation'
+import MobileTabBar from '@/components/MobileTabBar'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -36,6 +37,7 @@ export default function RootLayout({
             <main className="min-h-screen bg-gray-900 pb-20 md:pb-0">
               {children}
             </main>
+            <MobileTabBar />
             <Toaster 
               position="top-right" 
               toastOptions={{
