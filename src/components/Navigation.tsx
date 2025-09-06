@@ -383,8 +383,8 @@ export default function Navigation() {
 
         {/* Mobile Tab Bar - Direct Navigation */}
         {status === 'authenticated' && (
-          <div className="md:hidden bg-gray-800 border-t border-gray-700">
-            <div className="flex items-center justify-around py-2">
+          <div className="md:hidden bg-gray-800 border-t border-gray-700 fixed bottom-0 left-0 right-0 z-50">
+            <div className="flex items-center justify-around py-2" style={{ minHeight: '60px' }}>
               <Link
                 href="/sportsbook"
                 className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors duration-200 ${
