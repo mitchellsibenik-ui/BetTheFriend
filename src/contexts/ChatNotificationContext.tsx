@@ -38,10 +38,19 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
 
     const pollUnreadMessages = async () => {
       try {
-        const response = await fetch('/api/chat/unread')
+        // Use AbortController to prevent interference with navigation
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
+        
+        const response = await fetch('/api/chat/unread', {
+          signal: controller.signal,
+          cache: 'no-cache'
+        })
+        
+        clearTimeout(timeoutId)
+        
         if (response.ok) {
           const { unreadMessages } = await response.json()
-          console.log('Chat notification polling - unread messages:', unreadMessages)
           
           // Update unread counts
           const counts: { [roomId: string]: number } = {}
@@ -57,7 +66,6 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
               
               // Check if this notification was already shown using state
               if (!shownNotifications.has(messageId)) {
-                console.log('Showing new chat notification:', item.latestMessage)
                 const notification: ChatNotificationData = {
                   id: item.latestMessage.id,
                   sender: item.latestMessage.sender,
@@ -71,17 +79,18 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
               }
             }
           })
-        } else {
-          console.log('Chat notification polling failed:', response.status)
         }
       } catch (error) {
-        console.error('Error polling unread messages:', error)
+        // Silently handle errors to not interfere with navigation
+        if (error.name !== 'AbortError') {
+          console.error('Error polling unread messages:', error)
+        }
       }
     }
 
-    // Poll immediately, then every 5 seconds
+    // Poll immediately, then every 30 seconds (much less frequent)
     pollUnreadMessages()
-    const interval = setInterval(pollUnreadMessages, 5000)
+    const interval = setInterval(pollUnreadMessages, 30000)
 
     return () => clearInterval(interval)
   }, [session?.user?.id])
