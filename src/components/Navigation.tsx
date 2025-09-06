@@ -51,6 +51,7 @@ export default function Navigation() {
     if (status !== 'authenticated') return
 
     try {
+      console.log('Fetching notification count...')
       const response = await fetch('/api/notifications', {
         cache: 'no-store', // Prevent caching
         headers: {
@@ -58,7 +59,7 @@ export default function Navigation() {
         }
       })
       if (!response.ok) {
-        throw new Error('Failed to fetch notifications')
+        throw new Error(`Failed to fetch notifications: ${response.status}`)
       }
 
       const data = await response.json()
@@ -89,11 +90,14 @@ export default function Navigation() {
     if (status !== 'authenticated') return
 
     try {
+      console.log('Fetching user balance...')
       const response = await fetch('/api/user/balance')
       if (response.ok) {
         const data = await response.json()
         console.log('Updated user balance:', data.balance)
         setUserBalance(data.balance)
+      } else {
+        console.error('Failed to fetch user balance:', response.status, response.statusText)
       }
     } catch (error) {
       console.error('Error fetching user balance:', error)
@@ -104,8 +108,9 @@ export default function Navigation() {
     if (status === 'authenticated') {
       // Clear any stale cached data on mount
       localStorage.removeItem('notificationCount')
-      // Removed data fetching that was interfering with navigation
-      // Removed polling interval that was interfering with navigation
+      // Fetch initial data
+      fetchUserBalance()
+      fetchNotificationCount()
     } else {
       setNotificationCount(0)
       setUserBalance(null)
@@ -114,23 +119,70 @@ export default function Navigation() {
     }
   }, [status])
 
-  // Removed event listener that was interfering with navigation
+  // Add event listeners for balance and notification updates
+  useEffect(() => {
+    if (status !== 'authenticated') return
 
-  // Removed notification update event listener that was interfering with navigation
+    const handleBalanceUpdate = (event: CustomEvent) => {
+      setUserBalance(event.detail.balance)
+    }
 
-  // Removed balance update event listener that was interfering with navigation
+    const handleNotificationUpdate = (event: CustomEvent) => {
+      setNotificationCount(event.detail.count)
+    }
+
+    // Listen for custom events
+    window.addEventListener('balanceUpdated', handleBalanceUpdate as EventListener)
+    window.addEventListener('notificationsUpdated', handleNotificationUpdate as EventListener)
+
+    return () => {
+      window.removeEventListener('balanceUpdated', handleBalanceUpdate as EventListener)
+      window.removeEventListener('notificationsUpdated', handleNotificationUpdate as EventListener)
+    }
+  }, [status])
+
+  // Periodic refresh for notifications (less frequent to avoid interference)
+  useEffect(() => {
+    if (status !== 'authenticated') return
+
+    const interval = setInterval(() => {
+      fetchNotificationCount()
+    }, 60000) // Refresh every minute instead of more frequently
+
+    return () => clearInterval(interval)
+  }, [status])
 
   const handleLogout = async () => {
-    await signOut({ callbackUrl: '/' })
+    try {
+      await signOut({ callbackUrl: '/' })
+    } catch (error) {
+      console.error('Error during logout:', error)
+    }
   }
 
   const handleBack = () => {
-    // Always try to go back first, fallback to home
-    router.back()
+    try {
+      // Check if there's history to go back to
+      if (window.history.length > 1) {
+        router.back()
+      } else {
+        // If no history, go to home
+        router.push('/')
+      }
+    } catch (error) {
+      console.error('Error navigating back:', error)
+      // Fallback to home if back navigation fails
+      router.push('/')
+    }
   }
 
   // Check if we should show the back button (not on home page, but show on all other pages)
   const shouldShowBackButton = pathname !== '/'
+
+  // Close mobile menu when pathname changes
+  useEffect(() => {
+    setIsMobileMenuOpen(false)
+  }, [pathname])
 
   if (status === 'loading' || isLoading) {
     return (
@@ -306,7 +358,10 @@ export default function Navigation() {
             
             {/* Mobile Menu Button */}
             <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              onClick={() => {
+                console.log('Mobile menu button clicked, current state:', isMobileMenuOpen)
+                setIsMobileMenuOpen(!isMobileMenuOpen)
+              }}
               className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none"
             >
               <span className="sr-only">Open main menu</span>
@@ -347,28 +402,28 @@ export default function Navigation() {
           </div>
         </div>
 
-        {/* Mobile Tab Bar - SIMPLE ANCHOR TAGS */}
+        {/* Mobile Tab Bar - Using Next.js Link components */}
         {status === 'authenticated' && (
           <div className="md:hidden bg-gray-800 border-t border-gray-700 fixed bottom-0 left-0 right-0 z-50">
             <div className="flex items-center justify-around py-3">
-              <a href="/" className="flex flex-col items-center py-2 px-2 w-full text-gray-400 hover:text-white">
+              <Link href="/" className="flex flex-col items-center py-2 px-2 w-full text-gray-400 hover:text-white">
                 <div className="text-xs font-medium">HOME</div>
-              </a>
-              <a href="/sportsbook" className="flex flex-col items-center py-2 px-2 w-full text-gray-400 hover:text-white">
+              </Link>
+              <Link href="/sportsbook" className="flex flex-col items-center py-2 px-2 w-full text-gray-400 hover:text-white">
                 <div className="text-xs font-medium">SPORTS</div>
-              </a>
-              <a href="/showdown" className="flex flex-col items-center py-2 px-2 w-full text-gray-400 hover:text-white">
+              </Link>
+              <Link href="/showdown" className="flex flex-col items-center py-2 px-2 w-full text-gray-400 hover:text-white">
                 <div className="text-xs font-medium">SHOWDOWN</div>
-              </a>
-              <a href="/my-bets" className="flex flex-col items-center py-2 px-2 w-full text-gray-400 hover:text-white">
+              </Link>
+              <Link href="/my-bets" className="flex flex-col items-center py-2 px-2 w-full text-gray-400 hover:text-white">
                 <div className="text-xs font-medium">MY BETS</div>
-              </a>
-              <a href="/social" className="flex flex-col items-center py-2 px-2 w-full text-gray-400 hover:text-white">
+              </Link>
+              <Link href="/social" className="flex flex-col items-center py-2 px-2 w-full text-gray-400 hover:text-white">
                 <div className="text-xs font-medium">FRIENDS</div>
-              </a>
-              <a href="/notifications" className="flex flex-col items-center py-2 px-2 w-full text-gray-400 hover:text-white">
+              </Link>
+              <Link href="/notifications" className="flex flex-col items-center py-2 px-2 w-full text-gray-400 hover:text-white">
                 <div className="text-xs font-medium">ALERTS</div>
-              </a>
+              </Link>
             </div>
           </div>
         )}
