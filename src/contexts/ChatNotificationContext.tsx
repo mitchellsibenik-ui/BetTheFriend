@@ -34,6 +34,7 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
   const [shownNotifications, setShownNotifications] = useState<Set<string>>(new Set())
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [openChatRoomId, setOpenChatRoomId] = useState<string | null>(null)
+  const [lastNotificationTime, setLastNotificationTime] = useState<{ [messageId: string]: number }>({})
 
   // Load shown notifications from localStorage on mount
   useEffect(() => {
@@ -80,29 +81,23 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
           })
           setUnreadCounts(counts)
 
-          // Show notification for new messages using localStorage-based tracking
+          // Show notification for new messages using time-based tracking
           unreadMessages.forEach((item: any) => {
             if (item.latestMessage && item.unreadCount > 0) {
               const messageId = item.latestMessage.id
+              const messageTime = new Date(item.latestMessage.createdAt).getTime()
               
               // Don't show notification if chat is open for this room
               if (isChatOpen && openChatRoomId === item.roomId) {
                 return
               }
               
-              // Check if this notification was already shown using localStorage
-              const stored = localStorage.getItem('shownNotifications')
-              let shownSet = new Set<string>()
-              if (stored) {
-                try {
-                  const parsed = JSON.parse(stored)
-                  shownSet = new Set(parsed)
-                } catch (error) {
-                  console.warn('Failed to parse stored notifications:', error)
-                }
-              }
+              // Check if this notification was already shown using time-based tracking
+              const lastShownTime = lastNotificationTime[messageId] || 0
+              const timeSinceLastShown = Date.now() - lastShownTime
               
-              if (!shownSet.has(messageId)) {
+              // Only show if not shown in the last 10 seconds (prevent duplicates)
+              if (timeSinceLastShown > 10000) {
                 console.log('Showing notification for message:', item.latestMessage)
                 const notification: ChatNotificationData = {
                   id: item.latestMessage.id,
@@ -114,19 +109,21 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
                 
                 showNotification(notification)
                 
-                // Add to both state and localStorage immediately
-                shownSet.add(messageId)
-                localStorage.setItem('shownNotifications', JSON.stringify(Array.from(shownSet)))
-                setShownNotifications(shownSet)
+                // Update tracking
+                setLastNotificationTime(prev => ({
+                  ...prev,
+                  [messageId]: Date.now()
+                }))
                 
-                // Clean up old notifications from localStorage (keep last 100)
-                if (shownSet.size > 100) {
-                  const notificationsArray = Array.from(shownSet)
-                  const recentNotifications = notificationsArray.slice(-50)
-                  const cleanedSet = new Set(recentNotifications)
-                  localStorage.setItem('shownNotifications', JSON.stringify(Array.from(cleanedSet)))
-                  setShownNotifications(cleanedSet)
-                }
+                // Clean up old tracking data (keep last 100)
+                setLastNotificationTime(prev => {
+                  const entries = Object.entries(prev)
+                  if (entries.length > 100) {
+                    const recentEntries = entries.slice(-50)
+                    return Object.fromEntries(recentEntries)
+                  }
+                  return prev
+                })
               }
             }
           })
@@ -141,8 +138,8 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
       }
     }
 
-    // Poll for unread messages every 5 seconds
-    const interval = setInterval(pollUnreadMessages, 5000)
+    // Poll for unread messages every 8 seconds (less frequent to prevent mobile issues)
+    const interval = setInterval(pollUnreadMessages, 8000)
     
     return () => {
       clearInterval(interval)

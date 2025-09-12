@@ -41,7 +41,10 @@ export default function ChatNotification({ notification, onClose, onOpenChat }: 
 
   if (!notification || !isVisible) return null
 
-  const handleClick = async () => {
+  const handleClick = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
     // Add haptic feedback for mobile
     if (navigator.vibrate) {
       navigator.vibrate(50)
@@ -54,6 +57,7 @@ export default function ChatNotification({ notification, onClose, onOpenChat }: 
     
     // Small delay to ensure notification closes before opening chat
     setTimeout(() => {
+      console.log('Calling onOpenChat with roomId:', notification.roomId)
       onOpenChat(notification.roomId)
     }, 100)
   }
@@ -63,11 +67,13 @@ export default function ChatNotification({ notification, onClose, onOpenChat }: 
   }
 
   return (
-    <div className="fixed top-4 right-4 sm:top-4 sm:right-4 z-[9999] transform transition-all duration-300 ease-out max-w-[calc(100vw-2rem)] sm:max-w-sm animate-in slide-in-from-right-5 fade-in">
-      <div 
-        className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-2xl border border-white/20 backdrop-blur-xl p-3 sm:p-4 cursor-pointer hover:scale-105 active:scale-95 transition-all duration-200 touch-manipulation"
-        onClick={handleClick}
-      >
+            <div className="fixed top-4 right-4 sm:top-4 sm:right-4 z-[9999] transform transition-all duration-300 ease-out max-w-[calc(100vw-2rem)] sm:max-w-sm animate-in slide-in-from-right-5 fade-in">
+              <div
+                className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-2xl border border-white/20 backdrop-blur-xl p-3 sm:p-4 cursor-pointer hover:scale-105 active:scale-95 transition-all duration-200 touch-manipulation select-none"
+                onClick={handleClick}
+                onTouchEnd={handleClick}
+                style={{ touchAction: 'manipulation' }}
+              >
         <div className="flex items-start gap-2 sm:gap-3">
           <div className="flex-shrink-0">
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-full flex items-center justify-center">
@@ -82,6 +88,12 @@ export default function ChatNotification({ notification, onClose, onOpenChat }: 
               </p>
               <button
                 onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  onClose()
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault()
                   e.stopPropagation()
                   onClose()
                 }}
