@@ -34,15 +34,12 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
   const [shownNotifications, setShownNotifications] = useState<Set<string>>(new Set())
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [openChatRoomId, setOpenChatRoomId] = useState<string | null>(null)
-  const [lastNotificationTime, setLastNotificationTime] = useState<{ [messageId: string]: number }>({})
+  const [currentNotificationId, setCurrentNotificationId] = useState<string | null>(null)
 
-  // Load shown notifications from localStorage on mount
+  // Clear notifications on mount
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // Clear old notifications to start fresh
-      localStorage.removeItem('shownNotifications')
-      setShownNotifications(new Set())
-    }
+    setShownNotifications(new Set())
+    setCurrentNotificationId(null)
   }, [])
 
   // Save shown notifications to localStorage
@@ -58,7 +55,12 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
 
     const pollUnreadMessages = async () => {
       try {
-        console.log('Polling for unread messages...')
+        console.log('Polling for unread messages...', { 
+          shownNotifications: Array.from(shownNotifications), 
+          currentNotificationId,
+          isChatOpen,
+          openChatRoomId 
+        })
         // Use AbortController to prevent interference with navigation
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
@@ -81,50 +83,39 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
           })
           setUnreadCounts(counts)
 
-          // Show notification for new messages using time-based tracking
+          // Show notification for new messages - SIMPLE APPROACH
           unreadMessages.forEach((item: any) => {
             if (item.latestMessage && item.unreadCount > 0) {
               const messageId = item.latestMessage.id
-              const messageTime = new Date(item.latestMessage.createdAt).getTime()
               
               // Don't show notification if chat is open for this room
               if (isChatOpen && openChatRoomId === item.roomId) {
                 return
               }
               
-              // Check if this notification was already shown using time-based tracking
-              const lastShownTime = lastNotificationTime[messageId] || 0
-              const timeSinceLastShown = Date.now() - lastShownTime
-              
-              // Only show if not shown in the last 10 seconds (prevent duplicates)
-              if (timeSinceLastShown > 10000) {
-                console.log('Showing notification for message:', item.latestMessage)
-                const notification: ChatNotificationData = {
-                  id: item.latestMessage.id,
-                  sender: item.latestMessage.sender,
-                  message: item.latestMessage.message,
-                  roomId: item.roomId,
-                  timestamp: new Date(item.latestMessage.createdAt)
-                }
-                
-                showNotification(notification)
-                
-                // Update tracking
-                setLastNotificationTime(prev => ({
-                  ...prev,
-                  [messageId]: Date.now()
-                }))
-                
-                // Clean up old tracking data (keep last 100)
-                setLastNotificationTime(prev => {
-                  const entries = Object.entries(prev)
-                  if (entries.length > 100) {
-                    const recentEntries = entries.slice(-50)
-                    return Object.fromEntries(recentEntries)
-                  }
-                  return prev
-                })
+              // Don't show if already shown or if there's already a notification showing
+              if (shownNotifications.has(messageId) || currentNotificationId === messageId) {
+                return
               }
+              
+              console.log('Showing notification for message:', item.latestMessage)
+              const notification: ChatNotificationData = {
+                id: item.latestMessage.id,
+                sender: item.latestMessage.sender,
+                message: item.latestMessage.message,
+                roomId: item.roomId,
+                timestamp: new Date(item.latestMessage.createdAt)
+              }
+              
+              showNotification(notification)
+              setCurrentNotificationId(messageId)
+              
+              // Mark as shown immediately
+              setShownNotifications(prev => {
+                const newSet = new Set(prev)
+                newSet.add(messageId)
+                return newSet
+              })
             }
           })
         } else {
@@ -138,8 +129,8 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
       }
     }
 
-    // Poll for unread messages every 8 seconds (less frequent to prevent mobile issues)
-    const interval = setInterval(pollUnreadMessages, 8000)
+    // Poll for unread messages every 15 seconds (much less frequent to prevent looping)
+    const interval = setInterval(pollUnreadMessages, 15000)
     
     return () => {
       clearInterval(interval)
@@ -178,6 +169,7 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
 
   const closeNotification = () => {
     setCurrentNotification(null)
+    setCurrentNotificationId(null)
   }
 
   const setChatOpen = (isOpen: boolean, roomId?: string) => {

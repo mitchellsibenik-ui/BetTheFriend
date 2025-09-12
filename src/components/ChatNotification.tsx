@@ -45,21 +45,19 @@ export default function ChatNotification({ notification, onClose, onOpenChat }: 
     e.preventDefault()
     e.stopPropagation()
     
+    console.log('Notification clicked, opening chat for room:', notification.roomId)
+    
     // Add haptic feedback for mobile
     if (navigator.vibrate) {
       navigator.vibrate(50)
     }
     
-    console.log('Notification clicked, opening chat for room:', notification.roomId)
-    
     // Close notification first
     onClose()
     
-    // Small delay to ensure notification closes before opening chat
-    setTimeout(() => {
-      console.log('Calling onOpenChat with roomId:', notification.roomId)
-      onOpenChat(notification.roomId)
-    }, 100)
+    // Open chat immediately
+    console.log('Calling onOpenChat with roomId:', notification.roomId)
+    onOpenChat(notification.roomId)
   }
 
   const truncateMessage = (message: string, maxLength: number = 50) => {
