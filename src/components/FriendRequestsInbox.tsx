@@ -133,7 +133,7 @@ export default function FriendRequestsInbox() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-50">
+        <div className="absolute right-0 mt-2 w-80 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-[9999]">
           <div className="p-4">
             <h3 className="text-lg font-semibold text-white mb-4">Friend Requests</h3>
             {isLoading ? (
