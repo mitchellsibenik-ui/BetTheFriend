@@ -28,12 +28,12 @@ export default function ChatNotification({ notification, onClose, onOpenChat }: 
       
       // Sound removed as requested
       
-      // Auto-hide after 4 seconds (like popular chat apps)
+      // Auto-hide after 3.5 seconds
       const timer = setTimeout(() => {
         console.log('ChatNotification: Auto-hiding notification')
         setIsVisible(false)
         setTimeout(onClose, 300) // Wait for animation to complete
-      }, 4000)
+      }, 3500)
 
       return () => clearTimeout(timer)
     }

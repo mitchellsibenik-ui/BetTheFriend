@@ -38,15 +38,9 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
   // Load shown notifications from localStorage on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('shownNotifications')
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored)
-          setShownNotifications(new Set(parsed))
-        } catch (error) {
-          console.warn('Failed to parse stored notifications:', error)
-        }
-      }
+      // Clear old notifications to start fresh
+      localStorage.removeItem('shownNotifications')
+      setShownNotifications(new Set())
     }
   }, [])
 
@@ -86,7 +80,7 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
           })
           setUnreadCounts(counts)
 
-          // Show notification for new messages using state-based tracking
+          // Show notification for new messages using localStorage-based tracking
           unreadMessages.forEach((item: any) => {
             if (item.latestMessage && item.unreadCount > 0) {
               const messageId = item.latestMessage.id
@@ -96,8 +90,19 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
                 return
               }
               
-              // Check if this notification was already shown using state
-              if (!shownNotifications.has(messageId)) {
+              // Check if this notification was already shown using localStorage
+              const stored = localStorage.getItem('shownNotifications')
+              let shownSet = new Set<string>()
+              if (stored) {
+                try {
+                  const parsed = JSON.parse(stored)
+                  shownSet = new Set(parsed)
+                } catch (error) {
+                  console.warn('Failed to parse stored notifications:', error)
+                }
+              }
+              
+              if (!shownSet.has(messageId)) {
                 console.log('Showing notification for message:', item.latestMessage)
                 const notification: ChatNotificationData = {
                   id: item.latestMessage.id,
@@ -108,24 +113,20 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
                 }
                 
                 showNotification(notification)
-                setShownNotifications(prev => {
-                  const newSet = new Set(prev)
-                  newSet.add(messageId)
-                  saveShownNotifications(newSet)
-                  return newSet
-                })
                 
-                // Clean up old notifications from memory (keep last 100)
-                setShownNotifications(prev => {
-                  if (prev.size > 100) {
-                    const notificationsArray = Array.from(prev)
-                    const recentNotifications = notificationsArray.slice(-50)
-                    const newSet = new Set(recentNotifications)
-                    saveShownNotifications(newSet)
-                    return newSet
-                  }
-                  return prev
-                })
+                // Add to both state and localStorage immediately
+                shownSet.add(messageId)
+                localStorage.setItem('shownNotifications', JSON.stringify(Array.from(shownSet)))
+                setShownNotifications(shownSet)
+                
+                // Clean up old notifications from localStorage (keep last 100)
+                if (shownSet.size > 100) {
+                  const notificationsArray = Array.from(shownSet)
+                  const recentNotifications = notificationsArray.slice(-50)
+                  const cleanedSet = new Set(recentNotifications)
+                  localStorage.setItem('shownNotifications', JSON.stringify(Array.from(cleanedSet)))
+                  setShownNotifications(cleanedSet)
+                }
               }
             }
           })
@@ -146,7 +147,7 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
     return () => {
       clearInterval(interval)
     }
-  }, [session?.user?.id])
+  }, [session?.user?.id, isChatOpen, openChatRoomId])
 
   const showNotification = (notification: ChatNotificationData) => {
     console.log('Setting current notification:', notification)

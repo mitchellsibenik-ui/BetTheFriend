@@ -62,6 +62,7 @@ export default function SocialPage() {
   useEffect(() => {
     const handleOpenChat = async (roomId: string) => {
       try {
+        console.log('handleOpenChat called with roomId:', roomId)
         // Find the friend associated with this room
         const response = await fetch(`/api/chat/rooms/${roomId}`)
         if (response.ok) {
@@ -69,8 +70,11 @@ export default function SocialPage() {
           const friendId = room.user1Id === session?.user?.id ? room.user2Id : room.user1Id
           const friendUsername = room.user1Id === session?.user?.id ? room.user2.username : room.user1.username
           
+          console.log('Opening chat with friend:', { id: friendId, username: friendUsername })
           // Open chat with the friend
           await openChat({ id: friendId, username: friendUsername })
+        } else {
+          console.error('Failed to fetch room details:', response.status)
         }
       } catch (error) {
         console.error('Error opening chat from notification:', error)
