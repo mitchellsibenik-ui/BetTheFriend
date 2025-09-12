@@ -24,7 +24,7 @@ interface Friend {
 
 export default function SocialPage() {
   const { data: session } = useSession()
-  const { unreadCounts, markAsRead: contextMarkAsRead, showNotification, setOpenChatCallback } = useChatNotifications()
+  const { unreadCounts, markAsRead: contextMarkAsRead, showNotification, setOpenChatCallback, setChatOpen } = useChatNotifications()
   const [friends, setFriends] = useState<Friend[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -184,6 +184,8 @@ export default function SocialPage() {
         await loadChatMessages(room.id)
         // Mark messages as read when opening chat
         markAsRead(room.id)
+        // Notify context that chat is open
+        setChatOpen(true, room.id)
       } else {
         const errorData = await roomResponse.json()
         console.error('Failed to create/get chat room:', errorData)
@@ -214,6 +216,8 @@ export default function SocialPage() {
     setChatMessage('')
     setChatMessages([])
     setChatRoomId(null)
+    // Notify context that chat is closed
+    setChatOpen(false)
   }
 
   const loadChatMessages = async (roomId: string) => {

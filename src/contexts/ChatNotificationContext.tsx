@@ -21,6 +21,7 @@ interface ChatNotificationContextType {
   markAsRead: (roomId: string) => void
   openChat: (roomId: string) => void
   setOpenChatCallback: (callback: (roomId: string) => void) => void
+  setChatOpen: (isOpen: boolean, roomId?: string) => void
 }
 
 const ChatNotificationContext = createContext<ChatNotificationContextType | undefined>(undefined)
@@ -31,6 +32,8 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
   const [currentNotification, setCurrentNotification] = useState<ChatNotificationData | null>(null)
   const [openChatCallback, setOpenChatCallback] = useState<((roomId: string) => void) | null>(null)
   const [shownNotifications, setShownNotifications] = useState<Set<string>>(new Set())
+  const [isChatOpen, setIsChatOpen] = useState(false)
+  const [openChatRoomId, setOpenChatRoomId] = useState<string | null>(null)
 
   // Poll for unread messages
   useEffect(() => {
@@ -66,6 +69,11 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
             if (item.latestMessage && item.unreadCount > 0) {
               const messageId = item.latestMessage.id
               
+              // Don't show notification if chat is open for this room
+              if (isChatOpen && openChatRoomId === item.roomId) {
+                return
+              }
+              
               // Check if this notification was already shown using state
               if (!shownNotifications.has(messageId)) {
                 console.log('Showing notification for message:', item.latestMessage)
@@ -79,6 +87,13 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
                 
                 showNotification(notification)
                 setShownNotifications(prev => new Set(prev).add(messageId))
+                
+                // Clean up old notifications from memory (keep last 50)
+                if (shownNotifications.size > 50) {
+                  const notificationsArray = Array.from(shownNotifications)
+                  const recentNotifications = notificationsArray.slice(-25)
+                  setShownNotifications(new Set(recentNotifications))
+                }
               }
             }
           })
@@ -135,6 +150,11 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
     setCurrentNotification(null)
   }
 
+  const setChatOpen = (isOpen: boolean, roomId?: string) => {
+    setIsChatOpen(isOpen)
+    setOpenChatRoomId(roomId || null)
+  }
+
   return (
     <ChatNotificationContext.Provider
       value={{
@@ -142,7 +162,8 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
         showNotification,
         markAsRead,
         openChat,
-        setOpenChatCallback
+        setOpenChatCallback,
+        setChatOpen
       }}
     >
       {children}
