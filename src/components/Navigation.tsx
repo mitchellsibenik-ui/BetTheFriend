@@ -3,10 +3,34 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
+import { useState, useEffect } from 'react'
 
 export default function Navigation() {
   const { data: session, status } = useSession()
   const pathname = usePathname()
+  const [balance, setBalance] = useState<number>(0)
+  const [balanceLoading, setBalanceLoading] = useState(true)
+
+  // Fetch user balance
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetchBalance()
+    }
+  }, [session?.user?.id])
+
+  const fetchBalance = async () => {
+    try {
+      const response = await fetch('/api/user/balance')
+      if (response.ok) {
+        const data = await response.json()
+        setBalance(data.balance)
+      }
+    } catch (error) {
+      console.error('Error fetching balance:', error)
+    } finally {
+      setBalanceLoading(false)
+    }
+  }
 
   if (status === 'loading') {
     return (
@@ -75,7 +99,19 @@ export default function Navigation() {
 
           {/* User Info */}
           <div className="flex items-center space-x-4">
-            <span className="text-gray-300">{session?.user?.username}</span>
+            <div className="flex items-center space-x-3">
+              <span className="text-gray-300">{session?.user?.username}</span>
+              <div className="flex items-center space-x-2">
+                <span className="text-xs text-gray-400">Balance:</span>
+                <span className="text-green-400 font-semibold">
+                  {balanceLoading ? (
+                    <span className="animate-pulse">...</span>
+                  ) : (
+                    `$${balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+                  )}
+                </span>
+              </div>
+            </div>
             <button
               onClick={() => signOut({ callbackUrl: '/' })}
               className="px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
@@ -87,6 +123,20 @@ export default function Navigation() {
 
         {/* Mobile Navigation */}
         <div className="md:hidden bg-gray-800 border-t border-gray-700 fixed bottom-0 left-0 right-0 z-50">
+          {/* Mobile Balance Display */}
+          <div className="px-4 py-2 border-b border-gray-700">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-400">Balance:</span>
+              <span className="text-green-400 font-semibold text-sm">
+                {balanceLoading ? (
+                  <span className="animate-pulse">...</span>
+                ) : (
+                  `$${balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+                )}
+              </span>
+            </div>
+          </div>
+          
           <div className="flex justify-around py-3">
             <Link href="/" className="text-gray-400 hover:text-white text-xs">
               HOME
