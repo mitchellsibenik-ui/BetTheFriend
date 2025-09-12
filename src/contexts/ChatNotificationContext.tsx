@@ -38,6 +38,7 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
 
     const pollUnreadMessages = async () => {
       try {
+        console.log('Polling for unread messages...')
         // Use AbortController to prevent interference with navigation
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
@@ -51,6 +52,7 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
         
         if (response.ok) {
           const { unreadMessages } = await response.json()
+          console.log('Unread messages response:', unreadMessages)
           
           // Update unread counts
           const counts: { [roomId: string]: number } = {}
@@ -66,6 +68,7 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
               
               // Check if this notification was already shown using state
               if (!shownNotifications.has(messageId)) {
+                console.log('Showing notification for message:', item.latestMessage)
                 const notification: ChatNotificationData = {
                   id: item.latestMessage.id,
                   sender: item.latestMessage.sender,
@@ -79,6 +82,8 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
               }
             }
           })
+        } else {
+          console.error('Failed to fetch unread messages:', response.status, response.statusText)
         }
       } catch (error) {
         // Silently handle errors to not interfere with navigation

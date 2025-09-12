@@ -20,37 +20,51 @@ export async function GET(request: NextRequest) {
         ]
       },
       include: {
+        user1: {
+          select: { id: true, username: true }
+        },
+        user2: {
+          select: { id: true, username: true }
+        },
         messages: {
           where: {
-            senderId: { not: session.user.id }, // Only messages from other users
-            readStatus: {
-              none: {
-                userId: session.user.id
-              }
-            }
+            senderId: { not: session.user.id } // Only messages from other users
           },
           include: {
             sender: {
               select: { id: true, username: true }
+            },
+            readStatus: {
+              where: {
+                userId: session.user.id
+              }
             }
           },
-          orderBy: { createdAt: 'desc' },
-          take: 1 // Get the latest unread message for each room
+          orderBy: { createdAt: 'desc' }
         }
       }
     })
 
-    // Format the response
+    // Format the response - filter for unread messages
     const unreadData = chatRooms
-      .filter(room => room.messages.length > 0)
-      .map(room => ({
-        roomId: room.id,
-        unreadCount: room.messages.length,
-        latestMessage: room.messages[0],
-        otherUser: room.user1Id === session.user.id 
-          ? { id: room.user2Id, username: room.user2?.username }
-          : { id: room.user1Id, username: room.user1?.username }
-      }))
+      .map(room => {
+        // Filter messages that haven't been read by current user
+        const unreadMessages = room.messages.filter(message => 
+          message.readStatus.length === 0
+        )
+        
+        if (unreadMessages.length === 0) return null
+        
+        return {
+          roomId: room.id,
+          unreadCount: unreadMessages.length,
+          latestMessage: unreadMessages[0], // Most recent unread message
+          otherUser: room.user1Id === session.user.id 
+            ? { id: room.user2Id, username: room.user2?.username }
+            : { id: room.user1Id, username: room.user1?.username }
+        }
+      })
+      .filter(Boolean) // Remove null entries
 
     return NextResponse.json({ unreadMessages: unreadData })
   } catch (error) {

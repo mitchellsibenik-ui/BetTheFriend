@@ -95,19 +95,33 @@ export async function POST(
       }
     })
 
+    console.log('Created message:', newMessage.id)
+
     // Mark the message as read for the sender
-    await prisma.chatReadStatus.create({
-      data: {
-        messageId: newMessage.id,
-        userId: session.user.id
-      }
-    })
+    try {
+      await prisma.chatReadStatus.create({
+        data: {
+          messageId: newMessage.id,
+          userId: session.user.id
+        }
+      })
+      console.log('Created read status for sender')
+    } catch (readError) {
+      console.error('Error creating read status:', readError)
+      // Don't fail the entire request if read status creation fails
+    }
 
     // Update room's updatedAt timestamp
-    await prisma.chatRoom.update({
-      where: { id: roomId },
-      data: { updatedAt: new Date() }
-    })
+    try {
+      await prisma.chatRoom.update({
+        where: { id: roomId },
+        data: { updatedAt: new Date() }
+      })
+      console.log('Updated room timestamp')
+    } catch (updateError) {
+      console.error('Error updating room timestamp:', updateError)
+      // Don't fail the entire request if room update fails
+    }
 
     return NextResponse.json({ message: newMessage })
   } catch (error) {
