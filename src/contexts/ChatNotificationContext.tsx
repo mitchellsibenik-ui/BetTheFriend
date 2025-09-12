@@ -88,12 +88,11 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
       }
     }
 
-    // Poll only once when component mounts - no continuous polling
-    pollUnreadMessages()
+    // Poll for unread messages every 5 seconds
+    const interval = setInterval(pollUnreadMessages, 5000)
     
-    // No interval - just poll once to avoid interference
     return () => {
-      // No cleanup needed since no interval
+      clearInterval(interval)
     }
   }, [session?.user?.id])
 

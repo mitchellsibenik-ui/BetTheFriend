@@ -25,6 +25,16 @@ export default function ChatNotification({ notification, onClose, onOpenChat }: 
     if (notification) {
       console.log('ChatNotification: Received notification, setting visible:', notification)
       setIsVisible(true)
+      
+      // Play notification sound
+      try {
+        const audio = new Audio('/notification.mp3')
+        audio.volume = 0.5
+        audio.play().catch(console.warn)
+      } catch (error) {
+        console.warn('Could not play notification sound:', error)
+      }
+      
       // Auto-hide after 3 seconds
       const timer = setTimeout(() => {
         console.log('ChatNotification: Auto-hiding notification')

@@ -6,7 +6,7 @@ import FriendRequestsInbox from '@/components/FriendRequestsInbox'
 import SendFriendRequest from '@/components/SendFriendRequest'
 import CreateWagerForm from '@/components/CreateWagerForm'
 import { useRouter } from 'next/navigation'
-// import { useChatNotifications, useSetChatCallback } from '@/contexts/ChatNotificationContext'
+import { useChatNotifications } from '@/contexts/ChatNotificationContext'
 import SkeletonLoader from '@/components/SkeletonLoader'
 
 interface Friend {
@@ -24,7 +24,7 @@ interface Friend {
 
 export default function SocialPage() {
   const { data: session } = useSession()
-  // const { unreadCounts, markAsRead, showNotification } = useChatNotifications()
+  const { unreadCounts, markAsRead: contextMarkAsRead, showNotification, setOpenChatCallback } = useChatNotifications()
   const [friends, setFriends] = useState<Friend[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -57,6 +57,28 @@ export default function SocialPage() {
       window.removeEventListener('friendRequestAccepted', handleFriendRequestAccepted)
     }
   }, [])
+
+  // Set up chat callback for notifications
+  useEffect(() => {
+    const handleOpenChat = async (roomId: string) => {
+      try {
+        // Find the friend associated with this room
+        const response = await fetch(`/api/chat/rooms/${roomId}`)
+        if (response.ok) {
+          const { room } = await response.json()
+          const friendId = room.user1Id === session?.user?.id ? room.user2Id : room.user1Id
+          const friendUsername = room.user1Id === session?.user?.id ? room.user2.username : room.user1.username
+          
+          // Open chat with the friend
+          await openChat({ id: friendId, username: friendUsername })
+        }
+      } catch (error) {
+        console.error('Error opening chat from notification:', error)
+      }
+    }
+    
+    setOpenChatCallback(handleOpenChat)
+  }, [session?.user?.id, setOpenChatCallback])
 
   // Poll for new messages when chat is open
   useEffect(() => {
@@ -140,6 +162,9 @@ export default function SocialPage() {
     setShowRemoveConfirm(true)
   }
 
+  // Use context markAsRead function for proper integration
+  const markAsRead = contextMarkAsRead
+
   const openChat = async (friend: { id: string; username: string }) => {
     setChatFriend(friend)
     setShowChat(true)
@@ -178,7 +203,9 @@ export default function SocialPage() {
 
   // Helper function to get unread count for a friend
   const getUnreadCount = (friendId: string) => {
-    return 0 // No unread counts for now
+    // Find the room ID for this friend and return unread count
+    // This is a simplified version - in a real app you'd need to map friendId to roomId
+    return 0 // For now, return 0 as we don't have friendId to roomId mapping
   }
 
   const closeChat = () => {
@@ -557,7 +584,7 @@ export default function SocialPage() {
             </div>
 
             {/* Scrollable Friends List - Mobile Optimized */}
-            <div className="max-h-80 sm:max-h-none overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
+            <div className="max-h-[70vh] sm:max-h-none overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
               <div className="sm:divide-y sm:divide-white/10">
                 {friends.map((friend, index) => (
                   <div key={friend.id} className="group hover:bg-white/5 transition-all duration-300 hover:scale-[1.02] sm:mb-0 mb-3 sm:mb-0 last:mb-0">

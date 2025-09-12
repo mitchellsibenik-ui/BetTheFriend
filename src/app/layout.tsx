@@ -2,7 +2,7 @@ import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { AuthProvider } from '@/components/AuthProvider'
-// import { ChatNotificationProvider } from '@/contexts/ChatNotificationContext'
+import { ChatNotificationProvider } from '@/contexts/ChatNotificationContext'
 import { Toaster } from 'react-hot-toast'
 import Navigation from '@/components/Navigation'
 
@@ -31,10 +31,12 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <AuthProvider>
-          <Navigation />
-          <main className="min-h-screen bg-gray-900 pb-20 md:pb-0">
-            {children}
-          </main>
+          <ChatNotificationProvider>
+            <Navigation />
+            <main className="min-h-screen bg-gray-900 pb-20 md:pb-0">
+              {children}
+            </main>
+          </ChatNotificationProvider>
           <Toaster 
             position="top-right" 
             toastOptions={{
