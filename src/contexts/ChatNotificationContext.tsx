@@ -35,6 +35,28 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [openChatRoomId, setOpenChatRoomId] = useState<string | null>(null)
 
+  // Load shown notifications from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('shownNotifications')
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored)
+          setShownNotifications(new Set(parsed))
+        } catch (error) {
+          console.warn('Failed to parse stored notifications:', error)
+        }
+      }
+    }
+  }, [])
+
+  // Save shown notifications to localStorage
+  const saveShownNotifications = (notifications: Set<string>) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('shownNotifications', JSON.stringify(Array.from(notifications)))
+    }
+  }
+
   // Poll for unread messages
   useEffect(() => {
     if (!session?.user?.id) return
@@ -86,14 +108,24 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
                 }
                 
                 showNotification(notification)
-                setShownNotifications(prev => new Set(prev).add(messageId))
+                setShownNotifications(prev => {
+                  const newSet = new Set(prev)
+                  newSet.add(messageId)
+                  saveShownNotifications(newSet)
+                  return newSet
+                })
                 
-                // Clean up old notifications from memory (keep last 50)
-                if (shownNotifications.size > 50) {
-                  const notificationsArray = Array.from(shownNotifications)
-                  const recentNotifications = notificationsArray.slice(-25)
-                  setShownNotifications(new Set(recentNotifications))
-                }
+                // Clean up old notifications from memory (keep last 100)
+                setShownNotifications(prev => {
+                  if (prev.size > 100) {
+                    const notificationsArray = Array.from(prev)
+                    const recentNotifications = notificationsArray.slice(-50)
+                    const newSet = new Set(recentNotifications)
+                    saveShownNotifications(newSet)
+                    return newSet
+                  }
+                  return prev
+                })
               }
             }
           })

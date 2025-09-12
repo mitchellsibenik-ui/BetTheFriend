@@ -26,14 +26,7 @@ export default function ChatNotification({ notification, onClose, onOpenChat }: 
       console.log('ChatNotification: Received notification, setting visible:', notification)
       setIsVisible(true)
       
-      // Play notification sound
-      try {
-        const audio = new Audio('/notification.mp3')
-        audio.volume = 0.5
-        audio.play().catch(console.warn)
-      } catch (error) {
-        console.warn('Could not play notification sound:', error)
-      }
+      // Sound removed as requested
       
       // Auto-hide after 4 seconds (like popular chat apps)
       const timer = setTimeout(() => {
@@ -48,14 +41,21 @@ export default function ChatNotification({ notification, onClose, onOpenChat }: 
 
   if (!notification || !isVisible) return null
 
-  const handleClick = () => {
+  const handleClick = async () => {
     // Add haptic feedback for mobile
     if (navigator.vibrate) {
       navigator.vibrate(50)
     }
     
-    onOpenChat(notification.roomId)
+    console.log('Notification clicked, opening chat for room:', notification.roomId)
+    
+    // Close notification first
     onClose()
+    
+    // Small delay to ensure notification closes before opening chat
+    setTimeout(() => {
+      onOpenChat(notification.roomId)
+    }, 100)
   }
 
   const truncateMessage = (message: string, maxLength: number = 50) => {
