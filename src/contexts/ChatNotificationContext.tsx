@@ -49,18 +49,13 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
     }
   }
 
-  // Poll for unread messages
+  // TEMPORARILY DISABLED - Poll for unread messages
   useEffect(() => {
     if (!session?.user?.id) return
 
     const pollUnreadMessages = async () => {
       try {
-        console.log('Polling for unread messages...', { 
-          shownNotifications: Array.from(shownNotifications), 
-          currentNotificationId,
-          isChatOpen,
-          openChatRoomId 
-        })
+        console.log('Polling for unread messages (notifications disabled)...')
         // Use AbortController to prevent interference with navigation
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
@@ -76,48 +71,15 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
           const { unreadMessages } = await response.json()
           console.log('Unread messages response:', unreadMessages)
           
-          // Update unread counts
+          // Update unread counts ONLY - NO NOTIFICATIONS
           const counts: { [roomId: string]: number } = {}
           unreadMessages.forEach((item: any) => {
             counts[item.roomId] = item.unreadCount
           })
           setUnreadCounts(counts)
 
-          // Show notification for new messages - SIMPLE APPROACH
-          unreadMessages.forEach((item: any) => {
-            if (item.latestMessage && item.unreadCount > 0) {
-              const messageId = item.latestMessage.id
-              
-              // Don't show notification if chat is open for this room
-              if (isChatOpen && openChatRoomId === item.roomId) {
-                return
-              }
-              
-              // Don't show if already shown or if there's already a notification showing
-              if (shownNotifications.has(messageId) || currentNotificationId === messageId) {
-                return
-              }
-              
-              console.log('Showing notification for message:', item.latestMessage)
-              const notification: ChatNotificationData = {
-                id: item.latestMessage.id,
-                sender: item.latestMessage.sender,
-                message: item.latestMessage.message,
-                roomId: item.roomId,
-                timestamp: new Date(item.latestMessage.createdAt)
-              }
-              
-              showNotification(notification)
-              setCurrentNotificationId(messageId)
-              
-              // Mark as shown immediately
-              setShownNotifications(prev => {
-                const newSet = new Set(prev)
-                newSet.add(messageId)
-                return newSet
-              })
-            }
-          })
+          // NOTIFICATIONS DISABLED - Just update counts
+          console.log('Notifications disabled - only updating counts')
         } else {
           console.error('Failed to fetch unread messages:', response.status, response.statusText)
         }
@@ -129,13 +91,13 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
       }
     }
 
-    // Poll for unread messages every 15 seconds (much less frequent to prevent looping)
-    const interval = setInterval(pollUnreadMessages, 15000)
+    // Poll for unread messages every 30 seconds (just for counts)
+    const interval = setInterval(pollUnreadMessages, 30000)
     
     return () => {
       clearInterval(interval)
     }
-  }, [session?.user?.id, isChatOpen, openChatRoomId])
+  }, [session?.user?.id])
 
   const showNotification = (notification: ChatNotificationData) => {
     console.log('Setting current notification:', notification)
@@ -189,11 +151,12 @@ export function ChatNotificationProvider({ children }: { children: ReactNode }) 
       }}
     >
       {children}
-      <ChatNotification
+      {/* NOTIFICATIONS TEMPORARILY DISABLED */}
+      {/* <ChatNotification
         notification={currentNotification}
         onClose={closeNotification}
         onOpenChat={openChat}
-      />
+      /> */}
     </ChatNotificationContext.Provider>
   )
 }
