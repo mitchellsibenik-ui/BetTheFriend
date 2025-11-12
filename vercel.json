@@ -12,7 +12,7 @@
   "crons": [
     {
       "path": "/api/cron/settle-bets",
-      "schedule": "0 0 * * *"
+      "schedule": "*/30 * * * *"
     },
     {
       "path": "/api/cron/expire",
