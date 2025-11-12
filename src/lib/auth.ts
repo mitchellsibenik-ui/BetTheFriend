@@ -21,38 +21,68 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error('Invalid credentials')
-        }
-
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email
+        try {
+          console.log('🔐 Auth attempt:', { email: credentials?.email })
+          
+          if (!credentials?.email || !credentials?.password) {
+            console.log('❌ Missing credentials')
+            throw new Error('Invalid credentials')
           }
-        })
 
-        if (!user || !user?.password) {
-          throw new Error('No user found with this email')
-        }
+          // Find user by email (try lowercase first, then original case)
+          const normalizedEmail = credentials.email.toLowerCase().trim()
+          let user = await prisma.user.findUnique({
+            where: {
+              email: normalizedEmail
+            }
+          })
+          
+          // If not found with lowercase, try original case
+          if (!user) {
+            user = await prisma.user.findUnique({
+              where: {
+                email: credentials.email.trim()
+              }
+            })
+          }
 
-        const isCorrectPassword = await bcrypt.compare(
-          credentials.password,
-          user.password
-        )
+          if (!user) {
+            console.log('❌ User not found:', credentials.email)
+            throw new Error('No user found with this email')
+          }
 
-        if (!isCorrectPassword) {
-          throw new Error('Incorrect password')
-        }
+          if (!user?.password) {
+            console.log('❌ User has no password')
+            throw new Error('No user found with this email')
+          }
 
-        return {
-          id: user.id,
-          email: user.email,
-          username: user.username,
-          name: user.name,
-          image: user.image,
-          balance: user.balance,
-          wins: user.wins,
-          losses: user.losses
+          console.log('✅ User found:', user.username)
+          console.log('🔑 Comparing password...')
+
+          const isCorrectPassword = await bcrypt.compare(
+            credentials.password,
+            user.password
+          )
+
+          if (!isCorrectPassword) {
+            console.log('❌ Password incorrect')
+            throw new Error('Incorrect password')
+          }
+
+          console.log('✅ Password correct, returning user')
+          return {
+            id: user.id,
+            email: user.email,
+            username: user.username,
+            name: user.name,
+            image: user.image,
+            balance: user.balance,
+            wins: user.wins,
+            losses: user.losses
+          }
+        } catch (error) {
+          console.error('❌ Auth error:', error)
+          throw error
         }
       }
     })

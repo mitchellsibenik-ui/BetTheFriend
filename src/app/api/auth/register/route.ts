@@ -35,12 +35,12 @@ export async function POST(request: Request) {
       )
     }
 
-    // Check if user already exists
+    // Check if user already exists (case-insensitive for username)
     const existingUser = await prisma.user.findFirst({
       where: {
         OR: [
           { email },
-          { username }
+          { username: username.toLowerCase() }
         ]
       }
     })
@@ -82,9 +82,16 @@ export async function POST(request: Request) {
       }
     })
   } catch (error) {
-    console.error('Registration error:', error)
+    console.error('❌ Registration error:', error)
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    })
     return NextResponse.json(
-      { error: 'An error occurred during registration. Please try again.' },
+      { 
+        error: 'An error occurred during registration. Please try again.',
+        details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : 'Unknown error') : undefined
+      },
       { status: 500 }
     )
   }
