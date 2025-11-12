@@ -231,6 +231,66 @@ export default function SportsbookPage() {
     }
   }, [activeTab])
 
+  // Remove any stray "y" text nodes from the page
+  useEffect(() => {
+    const removeStrayY = () => {
+      // Function to walk through all nodes including shadow DOM
+      const walker = document.createTreeWalker(
+        document.body,
+        NodeFilter.SHOW_TEXT,
+        null
+      )
+
+      const nodesToRemove: Text[] = []
+      let node: Node | null
+
+      while ((node = walker.nextNode())) {
+        const textNode = node as Text
+        const text = textNode.textContent?.trim()
+        if (text === 'y' || text === 'y ') {
+          nodesToRemove.push(textNode)
+        }
+      }
+
+      // Remove found nodes
+      nodesToRemove.forEach((textNode) => {
+        console.log('Removed stray "y" text node:', textNode)
+        textNode.remove()
+      })
+
+      // Also check shadow DOMs
+      const allElements = document.querySelectorAll('*')
+      allElements.forEach((element) => {
+        if (element.shadowRoot) {
+          const shadowWalker = document.createTreeWalker(
+            element.shadowRoot,
+            NodeFilter.SHOW_TEXT,
+            null
+          )
+          let shadowNode: Node | null
+          while ((shadowNode = shadowWalker.nextNode())) {
+            const textNode = shadowNode as Text
+            const text = textNode.textContent?.trim()
+            if (text === 'y' || text === 'y ') {
+              console.log('Removed stray "y" text node from shadow DOM:', textNode)
+              textNode.remove()
+            }
+          }
+        }
+      })
+    }
+
+    // Run immediately and also after a short delay to catch dynamically added content
+    removeStrayY()
+    const timeout = setTimeout(removeStrayY, 100)
+    const interval = setInterval(removeStrayY, 1000)
+
+    return () => {
+      clearTimeout(timeout)
+      clearInterval(interval)
+    }
+  }, [games]) // Re-run when games change
+
   // Add manual refresh button
   const handleRefresh = () => {
     fetchGames(true)
@@ -504,6 +564,7 @@ export default function SportsbookPage() {
               >
                 <option value="All">All Sports</option>
                 <option value="NFL">NFL</option>
+                <option value="NCAAF">NCAAF</option>
                 <option value="NBA">NBA</option>
                 <option value="MLB">MLB</option>
                 <option value="NHL">NHL</option>
@@ -570,6 +631,7 @@ export default function SportsbookPage() {
               >
                 <option value="All">All Sports</option>
                 <option value="NFL">NFL</option>
+                <option value="NCAAF">NCAAF</option>
                 <option value="NBA">NBA</option>
                 <option value="MLB">MLB</option>
                 <option value="NHL">NHL</option>
@@ -730,7 +792,7 @@ export default function SportsbookPage() {
               return (
                 <div key={game.id} className="relative">
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-purple-600/5 rounded-2xl blur-xl"></div>
-y                  <div className={`relative bg-gradient-to-br from-white/8 to-white/3 backdrop-blur-xl border rounded-xl p-3 transition-all duration-300 hover:scale-[1.01] hover:shadow-2xl hover:shadow-blue-500/10 ${
+                  <div className={`relative bg-gradient-to-br from-white/8 to-white/3 backdrop-blur-xl border rounded-xl p-3 transition-all duration-300 hover:scale-[1.01] hover:shadow-2xl hover:shadow-blue-500/10 ${
                     game.status === 'live' ? 'border-red-500/50 bg-gradient-to-br from-red-500/8 to-red-500/3 shadow-red-500/20' : 'border-white/20 shadow-lg'
                   }`}>
                     {/* Mobile FanDuel-Style Row Layout */}
