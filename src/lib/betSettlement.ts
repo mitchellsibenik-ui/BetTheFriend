@@ -255,10 +255,13 @@ export async function settleCompletedBets() {
   try {
     console.log('🔍 [BET SETTLEMENT] Checking for completed bets to settle...')
     
-    // Get all active bets
+    // Get all active bets (check both ACTIVE and ACCEPTED statuses)
     const activeBets = await prisma.bet.findMany({
       where: { 
-        status: 'ACTIVE',
+        OR: [
+          { status: 'ACTIVE' },
+          { status: 'ACCEPTED' }
+        ],
         resolved: false
       },
       include: {
