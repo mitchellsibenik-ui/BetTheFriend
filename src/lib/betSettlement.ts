@@ -365,22 +365,41 @@ export async function settleCompletedBets() {
           console.log(`   ⏰ Game was scheduled for ${commenceTime?.toISOString()}, checking for results...`)
         }
         
-        // Fetch real game results (pass team names for better matching)
-        const gameResult = await fetchGameResults(gameData.sportKey, gameData.gameId, gameData.homeTeam, gameData.awayTeam)
+        // First, check if we have scores in the Game table
+        let homeScore: number | null = null
+        let awayScore: number | null = null
         
-        if (!gameResult || !gameResult.completed) {
-          if (gameShouldHaveStarted) {
-            console.log(`   ⚠️  Game should have started but results not available in API. This may need manual settlement.`)
-          } else {
-            console.log(`   ⏳ Game not completed yet or results not available`)
+        try {
+          const gameRecord = await prisma.game.findUnique({
+            where: { id: gameData.gameId },
+            select: { homeScore: true, awayScore: true, status: true }
+          })
+          
+          if (gameRecord && gameRecord.status === 'completed' && 
+              gameRecord.homeScore !== null && gameRecord.awayScore !== null) {
+            homeScore = gameRecord.homeScore
+            awayScore = gameRecord.awayScore
+            console.log(`   ✅ Found scores in database: ${gameData.homeTeam} ${homeScore} - ${gameData.awayTeam} ${awayScore}`)
           }
-          continue
+        } catch (error) {
+          console.log(`   ⚠️  Could not check Game table: ${error}`)
         }
         
-        // Extract scores - handle different score formats
-        let homeScore: number, awayScore: number
-        
-        if (Array.isArray(gameResult.scores)) {
+        // If no scores in database, try fetching from API
+        if (homeScore === null || awayScore === null) {
+          const gameResult = await fetchGameResults(gameData.sportKey, gameData.gameId, gameData.homeTeam, gameData.awayTeam)
+          
+          if (!gameResult || !gameResult.completed) {
+            if (gameShouldHaveStarted) {
+              console.log(`   ⚠️  Game should have started but results not available in API or database. This may need manual settlement.`)
+            } else {
+              console.log(`   ⏳ Game not completed yet or results not available`)
+            }
+            continue
+          }
+          
+          // Extract scores from API - handle different score formats
+          if (Array.isArray(gameResult.scores)) {
           // If scores is an array of objects with name/score
           if (gameResult.scores[0]?.name && gameResult.scores[0]?.score) {
             const homeScoreData = gameResult.scores.find(s => 
@@ -407,14 +426,37 @@ export async function settleCompletedBets() {
             homeScore = parseInt(gameResult.scores[0] || '0')
             awayScore = parseInt(gameResult.scores[1] || '0')
           }
-        } else {
-          // If scores is an object
-          homeScore = parseInt(gameResult.scores[gameData.homeTeam] || gameResult.scores[gameResult.home_team] || '0')
-          awayScore = parseInt(gameResult.scores[gameData.awayTeam] || gameResult.scores[gameResult.away_team] || '0')
+          } else {
+            // If scores is an object
+            homeScore = parseInt(gameResult.scores[gameData.homeTeam] || gameResult.scores[gameResult.home_team] || '0')
+            awayScore = parseInt(gameResult.scores[gameData.awayTeam] || gameResult.scores[gameResult.away_team] || '0')
+          }
+          
+          if (isNaN(homeScore) || isNaN(awayScore)) {
+            console.log(`   ❌ Could not parse scores from API response`)
+            continue
+          }
+          
+          // Update Game table with scores for future reference
+          try {
+            await prisma.game.update({
+              where: { id: gameData.gameId },
+              data: {
+                homeScore: homeScore,
+                awayScore: awayScore,
+                status: 'completed',
+                endTime: new Date()
+              }
+            })
+          } catch (error) {
+            // Game record might not exist, that's okay
+            console.log(`   ⚠️  Could not update Game table: ${error}`)
+          }
         }
         
-        if (isNaN(homeScore) || isNaN(awayScore)) {
-          console.log(`   ❌ Could not parse scores from API response`)
+        // At this point, we should have valid scores
+        if (homeScore === null || awayScore === null) {
+          console.log(`   ❌ No valid scores available`)
           continue
         }
         
