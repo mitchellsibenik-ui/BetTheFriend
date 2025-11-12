@@ -236,103 +236,100 @@ export default function BetDetailsPage() {
         </div>
 
         {/* Bet Card */}
-        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-          {/* Game Info */}
+        <div className="bg-gray-800 rounded-xl p-6 sm:p-8 border border-gray-700">
+          {/* Game Header - Clean and Clear */}
           {gameDetails && (
-            <div className="bg-gray-900 rounded-lg p-4 mb-6">
-              <div className="flex justify-between items-center">
-                <div className="text-white font-bold text-lg">{gameDetails.away_team}</div>
-                <div className="text-gray-400 text-sm">vs</div>
-                <div className="text-white font-bold text-lg">{gameDetails.home_team}</div>
+            <div className="mb-8 pb-6 border-b border-gray-700">
+              <div className="text-center mb-4">
+                <div className="text-gray-400 text-sm uppercase tracking-wider mb-2">Game</div>
+                <div className="text-white font-bold text-2xl sm:text-3xl">
+                  {gameDetails.away_team} <span className="text-gray-500 mx-2">@</span> {gameDetails.home_team}
+                </div>
               </div>
-              <p className="text-gray-400 text-sm mt-2">
-                {new Date(gameDetails.commence_time).toLocaleString('en-US', {
-                  timeZone: 'America/New_York',
-                  weekday: 'short',
-                  month: 'short',
-                  day: 'numeric',
-                  hour: 'numeric',
-                  minute: 'numeric',
-                  timeZoneName: 'short'
-                })}
-              </p>
+              <div className="text-center">
+                <div className="text-gray-400 text-sm uppercase tracking-wider mb-1">Date</div>
+                <div className="text-white text-lg">
+                  {new Date(gameDetails.commence_time).toLocaleString('en-US', {
+                    timeZone: 'America/New_York',
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    timeZoneName: 'short'
+                  })}
+                </div>
+              </div>
             </div>
           )}
 
-          {/* Bet Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            {/* Sender's Side */}
-            <div className="bg-gray-900 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-white mb-3">From: {bet.sender.username}</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Team:</span>
-                  <span className="text-white font-semibold">
+          {/* Bet Details - Side by Side Picks */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {/* Your Pick */}
+            <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 rounded-xl p-6 border-2 border-blue-500/30">
+              <div className="text-blue-400 text-sm uppercase tracking-wider mb-4 font-semibold">
+                Your Pick
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <div className="text-gray-400 text-xs uppercase tracking-wider mb-1">Team</div>
+                  <div className="text-white font-bold text-xl">
                     {bet.betType === 'overUnder' 
-                      ? (bet.senderTeam === 'Over' ? 'Over' : 'Under')
-                      : bet.senderTeam
+                      ? (isReceiver ? (bet.receiverTeam === 'Over' ? 'Over' : 'Under') : (bet.senderTeam === 'Over' ? 'Over' : 'Under'))
+                      : (isReceiver ? bet.receiverTeam : bet.senderTeam)
                     }
-                  </span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Bet Type:</span>
-                  <span className="text-white font-semibold capitalize">{formatBetType(bet.betType)}</span>
+                <div>
+                  <div className="text-gray-400 text-xs uppercase tracking-wider mb-1">Bet</div>
+                  <div className="text-white font-bold text-2xl">${bet.amount}</div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Odds/Line:</span>
-                  <span className="text-blue-400 font-semibold">
-                    {formatOdds(bet.senderValue, bet.betType)}
-                  </span>
+                <div>
+                  <div className="text-gray-400 text-xs uppercase tracking-wider mb-1">Odds</div>
+                  <div className="text-blue-400 font-bold text-xl">
+                    {formatOdds(isReceiver ? bet.receiverValue : bet.senderValue, bet.betType)}
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Risk:</span>
-                  <span className="text-white font-semibold">${bet.amount}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">To Win:</span>
-                  <span className="text-green-400 font-bold">${calculatePayout(bet.amount, bet.senderValue, bet.betType)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Total Payout:</span>
-                  <span className="text-green-400 font-bold">${(parseFloat(calculatePayout(bet.amount, bet.senderValue, bet.betType)) + bet.amount).toFixed(2)}</span>
+                <div className="pt-3 border-t border-gray-700">
+                  <div className="text-gray-400 text-xs uppercase tracking-wider mb-1">Potential Win</div>
+                  <div className="text-green-400 font-bold text-2xl">
+                    ${calculatePayout(bet.amount, isReceiver ? bet.receiverValue : bet.senderValue, bet.betType)}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Receiver's Side */}
-            <div className="bg-gray-900 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-white mb-3">To: {bet.receiver.username}</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Team:</span>
-                  <span className="text-white font-semibold">
+            {/* Their Pick */}
+            <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/20 rounded-xl p-6 border-2 border-purple-500/30">
+              <div className="text-purple-400 text-sm uppercase tracking-wider mb-4 font-semibold">
+                Their Pick
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <div className="text-gray-400 text-xs uppercase tracking-wider mb-1">Team</div>
+                  <div className="text-white font-bold text-xl">
                     {bet.betType === 'overUnder' 
-                      ? (bet.receiverTeam === 'Over' ? 'Over' : 'Under')
-                      : bet.receiverTeam
+                      ? (isReceiver ? (bet.senderTeam === 'Over' ? 'Over' : 'Under') : (bet.receiverTeam === 'Over' ? 'Over' : 'Under'))
+                      : (isReceiver ? bet.senderTeam : bet.receiverTeam)
                     }
-                  </span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Bet Type:</span>
-                  <span className="text-white font-semibold capitalize">{formatBetType(bet.betType)}</span>
+                <div>
+                  <div className="text-gray-400 text-xs uppercase tracking-wider mb-1">Bet</div>
+                  <div className="text-white font-bold text-2xl">${bet.amount}</div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Odds/Line:</span>
-                  <span className="text-blue-400 font-semibold">
-                    {formatOdds(bet.receiverValue, bet.betType)}
-                  </span>
+                <div>
+                  <div className="text-gray-400 text-xs uppercase tracking-wider mb-1">Odds</div>
+                  <div className="text-purple-400 font-bold text-xl">
+                    {formatOdds(isReceiver ? bet.senderValue : bet.receiverValue, bet.betType)}
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Risk:</span>
-                  <span className="text-white font-semibold">${bet.amount}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">To Win:</span>
-                  <span className="text-green-400 font-bold">${calculatePayout(bet.amount, bet.receiverValue, bet.betType)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Total Payout:</span>
-                  <span className="text-green-400 font-bold">${(parseFloat(calculatePayout(bet.amount, bet.receiverValue, bet.betType)) + bet.amount).toFixed(2)}</span>
+                <div className="pt-3 border-t border-gray-700">
+                  <div className="text-gray-400 text-xs uppercase tracking-wider mb-1">Potential Win</div>
+                  <div className="text-green-400 font-bold text-2xl">
+                    ${calculatePayout(bet.amount, isReceiver ? bet.senderValue : bet.receiverValue, bet.betType)}
+                  </div>
                 </div>
               </div>
             </div>
@@ -340,26 +337,26 @@ export default function BetDetailsPage() {
 
           {/* Message */}
           {bet.message && (
-            <div className="bg-gray-900 rounded-lg p-4 mb-6">
-              <h4 className="text-white font-semibold mb-2">Message:</h4>
-              <p className="text-gray-300">{bet.message}</p>
+            <div className="bg-gray-900/50 rounded-lg p-5 mb-6 border border-gray-700">
+              <div className="text-gray-400 text-xs uppercase tracking-wider mb-2">Message</div>
+              <p className="text-white text-lg">{bet.message}</p>
             </div>
           )}
 
           {/* Action Buttons */}
           {isReceiver && bet.status === 'PENDING' && (
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 mt-8">
               <button
                 onClick={() => handleBetResponse('accept')}
                 disabled={responding}
-                className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
+                className="flex-1 px-8 py-4 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold text-lg shadow-lg hover:shadow-green-500/50 transform hover:scale-[1.02]"
               >
                 {responding ? 'Accepting...' : 'Accept Bet'}
               </button>
               <button
                 onClick={() => handleBetResponse('decline')}
                 disabled={responding}
-                className="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
+                className="flex-1 px-8 py-4 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl hover:from-red-700 hover:to-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold text-lg shadow-lg hover:shadow-red-500/50 transform hover:scale-[1.02]"
               >
                 {responding ? 'Declining...' : 'Decline Bet'}
               </button>

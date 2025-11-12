@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(
   request: Request,
-  { params }: { params: { roomId: string } }
+  { params }: { params: Promise<{ roomId: string }> | { roomId: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -26,9 +26,13 @@ export async function POST(
       )
     }
 
+    // Handle params as Promise (Next.js 15+) or object (Next.js 13-14)
+    const resolvedParams = await Promise.resolve(params)
+    const roomId = resolvedParams.roomId
+
     // Verify the user is the creator of the room
     const room = await prisma.showdownRoom.findUnique({
-      where: { id: params.roomId },
+      where: { id: roomId },
       include: { creator: true }
     })
 
@@ -106,7 +110,7 @@ export async function POST(
             type: 'room_invite',
             message: `${session.user.username} invited you to join "${room.name}"`,
             data: JSON.stringify({
-              roomId: params.roomId,
+              roomId: roomId,
               roomName: room.name,
               creatorUsername: session.user.username,
               entryFee: room.entryFee
@@ -127,7 +131,10 @@ export async function POST(
   } catch (error) {
     console.error('Error sending invites:', error)
     return NextResponse.json(
-      { error: 'Failed to send invites' },
+      { 
+        error: 'Failed to send invites',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }

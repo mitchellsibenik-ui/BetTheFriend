@@ -5,17 +5,41 @@ import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import toast from 'react-hot-toast'
 
+const SPORTS_OPTIONS = [
+  { key: 'baseball_mlb', title: 'MLB' },
+  { key: 'americanfootball_nfl', title: 'NFL' },
+  { key: 'americanfootball_ncaaf', title: 'NCAAF' },
+  { key: 'basketball_nba', title: 'NBA' },
+  { key: 'icehockey_nhl', title: 'NHL' }
+]
+
 export default function CreateRoomPage() {
   const router = useRouter()
   const { data: session } = useSession()
   const [name, setName] = useState('')
   const [entryFee, setEntryFee] = useState(10)
+  const [sport, setSport] = useState('baseball_mlb')
+  const [sportTitle, setSportTitle] = useState('MLB')
+  const [gameDate, setGameDate] = useState(new Date().toISOString().split('T')[0])
   const [loading, setLoading] = useState(false)
+
+  const handleSportChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedSport = SPORTS_OPTIONS.find(s => s.key === e.target.value)
+    if (selectedSport) {
+      setSport(selectedSport.key)
+      setSportTitle(selectedSport.title)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!session?.user) {
       toast.error('Please sign in to create a room')
+      return
+    }
+
+    if (!name || !entryFee || !sport || !sportTitle || !gameDate) {
+      toast.error('Please fill in all required fields')
       return
     }
 
@@ -29,11 +53,15 @@ export default function CreateRoomPage() {
         body: JSON.stringify({
           name,
           entryFee,
+          sport,
+          sportTitle,
+          gameDate
         })
       })
 
       if (!response.ok) {
-        throw new Error('Failed to create room')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create room')
       }
 
       const data = await response.json()
@@ -41,7 +69,7 @@ export default function CreateRoomPage() {
       router.push('/showdown')
     } catch (error) {
       console.error('Error creating room:', error)
-      toast.error('Failed to create room')
+      toast.error(error instanceof Error ? error.message : 'Failed to create room')
     } finally {
       setLoading(false)
     }
@@ -65,6 +93,38 @@ export default function CreateRoomPage() {
                 required
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 placeholder="Enter room name"
+              />
+            </div>
+            <div>
+              <label htmlFor="sport" className="block text-sm font-medium text-gray-700">
+                Sport
+              </label>
+              <select
+                id="sport"
+                value={sport}
+                onChange={handleSportChange}
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              >
+                {SPORTS_OPTIONS.map((sportOption) => (
+                  <option key={sportOption.key} value={sportOption.key}>
+                    {sportOption.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="gameDate" className="block text-sm font-medium text-gray-700">
+                Game Date
+              </label>
+              <input
+                type="date"
+                id="gameDate"
+                value={gameDate}
+                onChange={(e) => setGameDate(e.target.value)}
+                required
+                min={new Date().toISOString().split('T')[0]}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
             <div>
