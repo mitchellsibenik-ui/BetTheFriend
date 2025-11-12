@@ -26,17 +26,68 @@ interface BetResult {
 }
 
 // Fetch real game results from The Odds API
-async function fetchGameResults(sportKey: string, gameId: string): Promise<GameResult | null> {
+async function fetchGameResults(sportKey: string, gameId: string, homeTeam?: string, awayTeam?: string): Promise<GameResult | null> {
   try {
-    const response = await axios.get(`https://api.the-odds-api.com/v4/sports/${sportKey}/scores`, {
-      params: {
-        apiKey: process.env.NEXT_PUBLIC_ODDS_API_KEY,
-        daysFrom: 3
-      }
-    })
+    const apiKey = process.env.NEXT_PUBLIC_ODDS_API_KEY
+    if (!apiKey) {
+      console.error('No API key configured')
+      return null
+    }
 
-    const game = response.data.find((g: any) => g.id === gameId)
-    if (!game || !game.completed || !game.scores) {
+    let response
+    // Try different API formats
+    try {
+      // Try with apiKey in query params
+      response = await axios.get(`https://api.the-odds-api.com/v4/sports/${sportKey}/scores`, {
+        params: {
+          apiKey: apiKey
+        }
+      })
+    } catch (error1) {
+      try {
+        // Try with x-api-key header
+        response = await axios.get(`https://api.the-odds-api.com/v4/sports/${sportKey}/scores`, {
+          headers: {
+            'x-api-key': apiKey
+          }
+        })
+      } catch (error2) {
+        console.error(`Error fetching scores for ${sportKey}:`, error2)
+        return null
+      }
+    }
+
+    if (!response.data || !Array.isArray(response.data)) {
+      return null
+    }
+
+    // First try to find by game ID
+    let game = response.data.find((g: any) => g.id === gameId)
+    
+    // If not found by ID, try to find by team names (fuzzy match)
+    if (!game && homeTeam && awayTeam) {
+      game = response.data.find((g: any) => {
+        const homeMatch = g.home_team === homeTeam || 
+                         g.home_team?.toLowerCase().includes(homeTeam.toLowerCase()) || 
+                         homeTeam.toLowerCase().includes(g.home_team?.toLowerCase() || '')
+        const awayMatch = g.away_team === awayTeam || 
+                         g.away_team?.toLowerCase().includes(awayTeam.toLowerCase()) || 
+                         awayTeam.toLowerCase().includes(g.away_team?.toLowerCase() || '')
+        return homeMatch && awayMatch
+      })
+    }
+    
+    if (!game) {
+      return null
+    }
+
+    // Check if game is completed
+    if (!game.completed) {
+      return null
+    }
+
+    // Check if scores are available
+    if (!game.scores || (Array.isArray(game.scores) && game.scores.length < 2)) {
       return null
     }
 
@@ -303,25 +354,69 @@ export async function settleCompletedBets() {
       try {
         console.log(`\n🎮 [GAME: ${gameData.homeTeam} vs ${gameData.awayTeam}]`)
         
-        // Fetch real game results
-        const gameResult = await fetchGameResults(gameData.sportKey, gameData.gameId)
+        // Check if we have commence_time from any bet to determine if game should have started
+        const firstBet = gameData.bets[0]
+        const gameDetails = JSON.parse(firstBet.gameDetails || '{}')
+        const commenceTime = gameDetails.commence_time ? new Date(gameDetails.commence_time) : null
+        const now = new Date()
+        const gameShouldHaveStarted = commenceTime && commenceTime < now
+        
+        if (gameShouldHaveStarted) {
+          console.log(`   ⏰ Game was scheduled for ${commenceTime?.toISOString()}, checking for results...`)
+        }
+        
+        // Fetch real game results (pass team names for better matching)
+        const gameResult = await fetchGameResults(gameData.sportKey, gameData.gameId, gameData.homeTeam, gameData.awayTeam)
         
         if (!gameResult || !gameResult.completed) {
-          console.log(`   ⏳ Game not completed yet`)
+          if (gameShouldHaveStarted) {
+            console.log(`   ⚠️  Game should have started but results not available in API. This may need manual settlement.`)
+          } else {
+            console.log(`   ⏳ Game not completed yet or results not available`)
+          }
           continue
         }
         
-        // Extract scores
-        const homeScoreData = gameResult.scores.find(s => s.name === gameData.homeTeam)
-        const awayScoreData = gameResult.scores.find(s => s.name === gameData.awayTeam)
+        // Extract scores - handle different score formats
+        let homeScore: number, awayScore: number
         
-        if (!homeScoreData || !awayScoreData) {
-          console.log(`   ❌ Could not find scores for both teams`)
-          continue
+        if (Array.isArray(gameResult.scores)) {
+          // If scores is an array of objects with name/score
+          if (gameResult.scores[0]?.name && gameResult.scores[0]?.score) {
+            const homeScoreData = gameResult.scores.find(s => 
+              s.name === gameData.homeTeam || 
+              s.name === gameResult.home_team ||
+              s.name?.toLowerCase().includes(gameData.homeTeam.toLowerCase())
+            )
+            const awayScoreData = gameResult.scores.find(s => 
+              s.name === gameData.awayTeam || 
+              s.name === gameResult.away_team ||
+              s.name?.toLowerCase().includes(gameData.awayTeam.toLowerCase())
+            )
+            
+            if (homeScoreData && awayScoreData) {
+              homeScore = parseInt(homeScoreData.score)
+              awayScore = parseInt(awayScoreData.score)
+            } else {
+              // Try by index if names don't match
+              homeScore = parseInt(gameResult.scores[0]?.score || gameResult.scores[0] || '0')
+              awayScore = parseInt(gameResult.scores[1]?.score || gameResult.scores[1] || '0')
+            }
+          } else {
+            // If scores is an array of numbers/strings
+            homeScore = parseInt(gameResult.scores[0] || '0')
+            awayScore = parseInt(gameResult.scores[1] || '0')
+          }
+        } else {
+          // If scores is an object
+          homeScore = parseInt(gameResult.scores[gameData.homeTeam] || gameResult.scores[gameResult.home_team] || '0')
+          awayScore = parseInt(gameResult.scores[gameData.awayTeam] || gameResult.scores[gameResult.away_team] || '0')
         }
         
-        const homeScore = parseInt(homeScoreData.score)
-        const awayScore = parseInt(awayScoreData.score)
+        if (isNaN(homeScore) || isNaN(awayScore)) {
+          console.log(`   ❌ Could not parse scores from API response`)
+          continue
+        }
         
         console.log(`   📊 Final Score: ${gameData.homeTeam} ${homeScore} - ${gameData.awayTeam} ${awayScore}`)
         
