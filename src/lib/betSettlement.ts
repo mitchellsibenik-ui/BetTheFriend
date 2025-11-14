@@ -492,13 +492,17 @@ export async function settleCompletedBets() {
                 awayScore = parseInt(awayScoreData.score)
               } else {
                 // Try by index if names don't match
-                homeScore = parseInt(gameResult.scores[0]?.score || gameResult.scores[0] || '0')
-                awayScore = parseInt(gameResult.scores[1]?.score || gameResult.scores[1] || '0')
+                const score0 = gameResult.scores[0]
+                const score1 = gameResult.scores[1]
+                homeScore = parseInt(typeof score0 === 'object' && score0?.score ? score0.score : String(score0 || '0'))
+                awayScore = parseInt(typeof score1 === 'object' && score1?.score ? score1.score : String(score1 || '0'))
               }
             } else {
               // If scores is an array of numbers/strings
-              homeScore = parseInt(gameResult.scores[0] || '0')
-              awayScore = parseInt(gameResult.scores[1] || '0')
+              const score0 = gameResult.scores[0]
+              const score1 = gameResult.scores[1]
+              homeScore = parseInt(typeof score0 === 'object' && score0?.score ? score0.score : String(score0 || '0'))
+              awayScore = parseInt(typeof score1 === 'object' && score1?.score ? score1.score : String(score1 || '0'))
             }
           } else {
             // If scores is an object
@@ -531,6 +535,20 @@ export async function settleCompletedBets() {
           }
         } else {
           // No API results available
+          if (gameShouldHaveStarted) {
+            const hoursSinceStart = commenceTime ? Math.floor((now.getTime() - commenceTime.getTime()) / (1000 * 60 * 60)) : 0
+            if (hoursSinceStart >= 4) {
+              console.log(`   ⚠️  WARNING: Game started ${hoursSinceStart} hours ago but results not available. May need manual settlement.`)
+              console.log(`   📋 Game ID: ${gameData.gameId}, Teams: ${gameData.homeTeam} vs ${gameData.awayTeam}`)
+              console.log(`   📋 Affected bets: ${gameData.bets.length}`)
+            } else {
+              console.log(`   ⏳ Game started ${hoursSinceStart} hours ago, may still be in progress`)
+            }
+          } else {
+            console.log(`   ⏳ Game not completed yet or results not available`)
+          }
+          continue
+        }
         
         // At this point, we should have valid scores (preferably from real-time API)
         if (homeScore === null || awayScore === null) {
@@ -672,7 +690,6 @@ export async function settleCompletedBets() {
             // Continue processing other bets even if one fails
           }
         }
-        
       } catch (error) {
         console.error(`❌ Error processing game ${gameKey}:`, error)
         console.error(`Error details:`, error instanceof Error ? error.message : String(error))
@@ -705,7 +722,4 @@ export async function settleCompletedBets() {
       error: error instanceof Error ? error.message : 'Unknown error'
     }
   }
-}
-
-// Export for use in cron jobs or manual triggers
-export default settleCompletedBets 
+} 
