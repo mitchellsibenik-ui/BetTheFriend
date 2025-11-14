@@ -42,6 +42,7 @@ interface Friend {
 const SPORTS_OPTIONS = [
   { key: 'baseball_mlb', title: 'MLB' },
   { key: 'americanfootball_nfl', title: 'NFL' },
+  { key: 'americanfootball_ncaaf', title: 'NCAAF' },
   { key: 'basketball_nba', title: 'NBA' },
   { key: 'icehockey_nhl', title: 'NHL' }
 ]
@@ -94,16 +95,24 @@ export default function ShowdownPage() {
         friendsRes.json()
       ])
 
+      console.log('Rooms API response:', roomsData)
       console.log('Friends API response:', friendsData)
       console.log('Friends array:', friendsData.friends)
 
+      // Ensure roomsData is an array
+      const roomsArray = Array.isArray(roomsData) ? roomsData : []
+
       // Filter rooms by status
       const filteredRooms = statusFilter === 'all' 
-        ? roomsData 
-        : roomsData.filter((room: ShowdownRoom) => room.status === statusFilter)
+        ? roomsArray 
+        : roomsArray.filter((room: ShowdownRoom) => room.status === statusFilter)
+
+      console.log('Filtered rooms:', filteredRooms)
 
       // Apply expiration filter to remove rooms where games have started
       const validRooms = getValidRooms(filteredRooms)
+
+      console.log('Valid rooms after filtering:', validRooms)
 
       setRooms(Array.isArray(validRooms) ? validRooms : [])
       setFriends(friendsData.friends || [])
@@ -119,8 +128,40 @@ export default function ShowdownPage() {
   useEffect(() => {
     if (status === 'authenticated') {
       fetchData()
+      
+      // Check if a room was just created and refresh
+      if (sessionStorage.getItem('showdownRoomCreated') === 'true') {
+        sessionStorage.removeItem('showdownRoomCreated')
+        // Small delay to ensure database is updated
+        setTimeout(() => {
+          fetchData()
+        }, 500)
+      }
     }
   }, [status, statusFilter])
+
+  // Refresh data when page becomes visible or gains focus (handles redirects)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && status === 'authenticated') {
+        fetchData()
+      }
+    }
+    
+    const handleFocus = () => {
+      if (status === 'authenticated') {
+        fetchData()
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [status])
 
   // Listen for showdown invitation accepted events
   useEffect(() => {
@@ -129,9 +170,17 @@ export default function ShowdownPage() {
       fetchData()
     }
 
+    const handleShowdownRoomCreated = () => {
+      console.log('Showdown room created, refreshing data...')
+      fetchData()
+    }
+
     window.addEventListener('showdownInvitationAccepted', handleShowdownInvitationAccepted)
+    window.addEventListener('showdownRoomCreated', handleShowdownRoomCreated)
+    
     return () => {
       window.removeEventListener('showdownInvitationAccepted', handleShowdownInvitationAccepted)
+      window.removeEventListener('showdownRoomCreated', handleShowdownRoomCreated)
     }
   }, [])
 
@@ -271,9 +320,15 @@ export default function ShowdownPage() {
 
   // Check if a game has started (for expiration logic)
   const hasGameStarted = (gameDate: string) => {
-    const gameStartTime = new Date(gameDate)
+    if (!gameDate) return false
+    
+    // Parse the date string (format: YYYY-MM-DD)
+    const gameDateObj = new Date(gameDate + 'T00:00:00') // Set to start of day
     const now = new Date()
-    return gameStartTime < now
+    now.setHours(0, 0, 0, 0) // Set to start of today for fair comparison
+    
+    // Only consider it started if the date has passed (not today)
+    return gameDateObj < now
   }
 
   // Filter out rooms where games have started and they're still open

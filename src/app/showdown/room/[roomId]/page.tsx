@@ -49,6 +49,12 @@ interface Pick {
   selectedTeam: string
 }
 
+interface Friend {
+  id: string
+  username: string
+  email: string
+}
+
 export default function ShowdownRoomPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -61,6 +67,10 @@ export default function ShowdownRoomPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [friends, setFriends] = useState<Friend[]>([])
+  const [isAddFriendsModalOpen, setIsAddFriendsModalOpen] = useState(false)
+  const [selectedFriends, setSelectedFriends] = useState<string[]>([])
+  const [isAddingFriends, setIsAddingFriends] = useState(false)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -79,13 +89,23 @@ export default function ShowdownRoomPage() {
       setLoading(true)
       setError(null)
 
-      // First fetch the room data
-      const roomRes = await fetch(`/api/showdown/rooms/${roomId}`)
+      // Fetch room data, games, and friends in parallel
+      const [roomRes, friendsRes] = await Promise.all([
+        fetch(`/api/showdown/rooms/${roomId}`),
+        fetch('/api/friends')
+      ])
+
       if (!roomRes.ok) {
         throw new Error('Failed to fetch room data')
       }
       const roomData = await roomRes.json()
       setRoom(roomData)
+
+      // Fetch friends data
+      if (friendsRes.ok) {
+        const friendsData = await friendsRes.json()
+        setFriends(friendsData.friends || [])
+      }
 
       // Then fetch games using the room data
       const gamesRes = await fetch(`/api/showdown/games?sport=${roomData.sport}&date=${roomData.gameDate}`)
@@ -179,6 +199,40 @@ export default function ShowdownRoomPage() {
     }
   }
 
+  const handleAddFriends = async () => {
+    if (selectedFriends.length === 0) {
+      toast.error('Please select friends to add')
+      return
+    }
+
+    try {
+      setIsAddingFriends(true)
+      const response = await fetch(`/api/showdown/rooms/${roomId}/add-friends`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ friendIds: selectedFriends }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to add friends')
+      }
+
+      const result = await response.json()
+      toast.success(`Successfully added ${result.addedCount} friends to the showdown!`)
+      setIsAddFriendsModalOpen(false)
+      setSelectedFriends([])
+      fetchRoomData()
+    } catch (err) {
+      console.error('Error adding friends:', err)
+      toast.error(err instanceof Error ? err.message : 'Failed to add friends')
+    } finally {
+      setIsAddingFriends(false)
+    }
+  }
+
   const formatTime = (timeString: string) => {
     return new Date(timeString).toLocaleTimeString('en-US', {
       hour: 'numeric',
@@ -264,7 +318,7 @@ export default function ShowdownRoomPage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="mb-6 flex space-x-4">
+        <div className="mb-6 flex flex-wrap gap-3">
           {canMakePicks && (
             <button
               onClick={handleSubmitPicks}
@@ -282,6 +336,15 @@ export default function ShowdownRoomPage() {
               className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
             >
               {submitting ? 'Grading...' : 'Grade Results'}
+            </button>
+          )}
+
+          {isCreator && room.status === 'open' && (
+            <button
+              onClick={() => setIsAddFriendsModalOpen(true)}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+            >
+              Add Friends
             </button>
           )}
         </div>
@@ -400,6 +463,62 @@ export default function ShowdownRoomPage() {
             ))}
           </div>
         </div>
+
+        {/* Add Friends Modal */}
+        {isAddFriendsModalOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 w-full max-w-md shadow-2xl border border-white/20">
+              <h2 className="text-xl font-bold mb-6 text-center">Add Friends to {room?.name}</h2>
+              
+              <div className="space-y-3 max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
+                {friends
+                  .filter(friend => !room?.participants.some(p => p.user.id === friend.id))
+                  .map((friend) => (
+                    <label key={friend.id} className="flex items-center space-x-3 cursor-pointer p-3 rounded-lg hover:bg-white/5 transition-colors duration-200">
+                      <input
+                        type="checkbox"
+                        checked={selectedFriends.includes(friend.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedFriends([...selectedFriends, friend.id])
+                          } else {
+                            setSelectedFriends(selectedFriends.filter(id => id !== friend.id))
+                          }
+                        }}
+                        className="w-5 h-5 rounded border-white/20 text-purple-600 focus:ring-purple-500 focus:ring-2 bg-white/10"
+                      />
+                      <span className="text-white font-medium">{friend.username}</span>
+                    </label>
+                  ))}
+              </div>
+
+              {friends.filter(friend => !room?.participants.some(p => p.user.id === friend.id)).length === 0 && (
+                <div className="text-center py-8 text-gray-400">
+                  <p>All your friends are already in this showdown!</p>
+                </div>
+              )}
+
+              <div className="flex space-x-3 mt-8">
+                <button
+                  onClick={() => {
+                    setIsAddFriendsModalOpen(false)
+                    setSelectedFriends([])
+                  }}
+                  className="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white px-4 py-3 rounded-xl font-medium transition-all duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddFriends}
+                  disabled={isAddingFriends || selectedFriends.length === 0}
+                  className="flex-1 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 disabled:from-gray-600 disabled:to-gray-700 text-white px-4 py-3 rounded-xl font-medium transition-all duration-200 transform hover:scale-105 disabled:transform-none"
+                >
+                  {isAddingFriends ? 'Adding...' : `Add ${selectedFriends.length} Friend${selectedFriends.length !== 1 ? 's' : ''}`}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(
   request: Request,
-  { params }: { params: { roomId: string } }
+  { params }: { params: Promise<{ roomId: string }> | { roomId: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -13,6 +13,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const resolvedParams = await Promise.resolve(params)
     const { friendIds } = await request.json()
 
     if (!Array.isArray(friendIds) || friendIds.length === 0) {
@@ -24,7 +25,7 @@ export async function POST(
 
     // Verify the user is the creator of the room
     const room = await prisma.showdownRoom.findUnique({
-      where: { id: params.roomId },
+      where: { id: resolvedParams.roomId },
       include: { 
         creator: true,
         participants: {
@@ -138,7 +139,7 @@ export async function POST(
           tx.showdownParticipant.create({
             data: {
               userId: friendId,
-              roomId: params.roomId,
+              roomId: resolvedParams.roomId,
               score: 0
             },
             include: {

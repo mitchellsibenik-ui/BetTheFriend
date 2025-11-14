@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(
   request: Request,
-  { params }: { params: { roomId: string } }
+  { params }: { params: Promise<{ roomId: string }> | { roomId: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -13,7 +13,8 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { roomId } = params
+    const resolvedParams = await Promise.resolve(params)
+    const { roomId } = resolvedParams
 
     // Verify user is the creator of this room
     const room = await prisma.showdownRoom.findUnique({

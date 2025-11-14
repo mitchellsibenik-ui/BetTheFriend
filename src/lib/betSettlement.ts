@@ -99,16 +99,20 @@ async function fetchGameResults(sportKey: string, gameId: string, homeTeam?: str
       return null
     }
 
-    // Check if game is completed
-    if (!game.completed) {
-      return null
-    }
-
-    // Check if scores are available
+    // Check if scores are available (required for grading)
     if (!game.scores || (Array.isArray(game.scores) && game.scores.length < 2)) {
       return null
     }
 
+    // For real-time grading, we need the game to be completed
+    // However, some APIs may mark games as completed even if status isn't "completed"
+    // Check both the completed flag and if we have valid final scores
+    if (!game.completed) {
+      // Game is still in progress - don't grade yet
+      return null
+    }
+
+    // Return the game with real-time results
     return game
   } catch (error) {
     console.error(`Error fetching results for ${gameId}:`, error)
@@ -116,7 +120,13 @@ async function fetchGameResults(sportKey: string, gameId: string, homeTeam?: str
   }
 }
 
-// Calculate sportsbook payout based on odds
+/**
+ * Calculate sportsbook payout using standard American odds formula
+ * This matches industry-standard sportsbook payout calculations
+ * 
+ * Positive odds (+150): Bet $100 to win $150 → payout = (stake * odds) / 100
+ * Negative odds (-110): Bet $110 to win $100 → payout = (stake * 100) / |odds|
+ */
 function calculateSportsbookPayout(odds: number, stake: number): number {
   if (odds > 0) {
     // Positive odds: bet $100 to win $X
@@ -135,7 +145,11 @@ function parseValueAndOdds(value: string): { line: number; odds: number } {
   return { line, odds }
 }
 
-// Grade a moneyline bet (straight winner pick)
+/**
+ * Grade a moneyline bet using standard sportsbook rules
+ * Standard logic: Winner is determined by final score (including overtime)
+ * Ties result in push (stake returned to both parties)
+ */
 function gradeMoneylineBet(
   bet: any,
   homeScore: number,
@@ -183,7 +197,12 @@ function gradeMoneylineBet(
   }
 }
 
-// Grade a spread bet (margin-based pick)
+/**
+ * Grade a spread bet using standard sportsbook rules
+ * Standard logic: Apply spread to the team you bet on, compare adjusted scores
+ * Example: If you bet Home -3.5 and they win by 4+, you win. If they win by 3 or less, you lose.
+ * Push occurs if game lands exactly on the spread (rare with half-point spreads)
+ */
 function gradeSpreadBet(
   bet: any,
   homeScore: number,
@@ -194,19 +213,23 @@ function gradeSpreadBet(
   const senderData = parseValueAndOdds(bet.senderValue)
   const receiverData = parseValueAndOdds(bet.receiverValue)
   
-  // Adjust scores based on spread
+  // Standard sportsbook spread logic: Apply spread to the team you bet on
   let senderAdjustedScore: number
   let receiverAdjustedScore: number
   
   if (bet.senderTeam === homeTeam) {
+    // Sender bet on home team - apply their spread to home score
     senderAdjustedScore = homeScore + senderData.line
+    // Receiver bet on away team - apply their spread to away score
     receiverAdjustedScore = awayScore + receiverData.line
   } else {
+    // Sender bet on away team - apply their spread to away score
     senderAdjustedScore = awayScore + senderData.line
+    // Receiver bet on home team - apply their spread to home score
     receiverAdjustedScore = homeScore + receiverData.line
   }
   
-  // Compare adjusted scores
+  // Standard comparison: Higher adjusted score wins
   if (senderAdjustedScore > receiverAdjustedScore) {
     const winnings = calculateSportsbookPayout(senderData.odds, bet.amount)
     return {
@@ -235,7 +258,11 @@ function gradeSpreadBet(
   }
 }
 
-// Grade an over/under bet (total-points pick)
+/**
+ * Grade an over/under bet using standard sportsbook rules
+ * Standard logic: Compare total points scored to the line
+ * Over wins if total > line, Under wins if total < line, Push if total = line exactly
+ */
 function gradeOverUnderBet(
   bet: any,
   homeScore: number,
@@ -320,18 +347,24 @@ function gradeBet(
 }
 
 /**
- * Main settlement function - Automatically grades and settles completed bets
+ * Main settlement function - Automatically grades and settles completed bets using REAL-TIME game results
  * 
  * Flow:
  * 1. Finds all ACTIVE/ACCEPTED bets that haven't been resolved
  * 2. Groups bets by game
  * 3. For each game:
- *    a. Checks Game table for stored scores (fast path)
- *    b. Falls back to API if scores not in database
- *    c. Updates Game table with scores for future reference
- * 4. Grades each bet based on bet type (moneyline, spread, over/under)
+ *    a. ALWAYS fetches fresh real-time results from The Odds API (primary source)
+ *    b. Falls back to database only if API is unavailable (with warning)
+ *    c. Updates Game table with real-time scores for future reference
+ * 4. Grades each bet based on bet type (moneyline, spread, over/under) using REAL scores
  * 5. Updates balances, win/loss records, and bet status atomically
  * 6. Sends notifications to both users
+ * 
+ * Real-Time Results:
+ * - Always prioritizes API results over cached database scores
+ * - Uses The Odds API /scores endpoint for up-to-date game results
+ * - Only grades games marked as "completed" by the API
+ * - Logs warnings if using database fallback instead of real-time API
  * 
  * Error Handling:
  * - Retries API calls with exponential backoff
@@ -407,76 +440,66 @@ export async function settleCompletedBets() {
           console.log(`   ⏰ Game was scheduled for ${commenceTime?.toISOString()}, checking for results...`)
         }
         
-        // First, check if we have scores in the Game table
+        // ALWAYS fetch fresh results from API for real-time accuracy
+        // The API provides the most up-to-date scores and completion status
+        console.log(`   🔄 Fetching real-time results from API for ${gameData.homeTeam} vs ${gameData.awayTeam}...`)
+        const gameResult = await fetchGameResults(gameData.sportKey, gameData.gameId, gameData.homeTeam, gameData.awayTeam)
+        
         let homeScore: number | null = null
         let awayScore: number | null = null
         
-        try {
-          const gameRecord = await prisma.game.findUnique({
-            where: { id: gameData.gameId },
-            select: { homeScore: true, awayScore: true, status: true }
-          })
-          
-          if (gameRecord && gameRecord.status === 'completed' && 
-              gameRecord.homeScore !== null && gameRecord.awayScore !== null) {
-            homeScore = gameRecord.homeScore
-            awayScore = gameRecord.awayScore
-            console.log(`   ✅ Found scores in database: ${gameData.homeTeam} ${homeScore} - ${gameData.awayTeam} ${awayScore}`)
+        // If API doesn't have results yet, check database as fallback (but log warning)
+        if (!gameResult || !gameResult.completed) {
+          try {
+            const gameRecord = await prisma.game.findUnique({
+              where: { id: gameData.gameId },
+              select: { homeScore: true, awayScore: true, status: true }
+            })
+            
+            if (gameRecord && gameRecord.status === 'completed' && 
+                gameRecord.homeScore !== null && gameRecord.awayScore !== null) {
+              // Use database scores as fallback, but log that we're not using real-time API
+              homeScore = gameRecord.homeScore
+              awayScore = gameRecord.awayScore
+              console.log(`   ⚠️  Using database scores (API unavailable): ${gameData.homeTeam} ${homeScore} - ${gameData.awayTeam} ${awayScore}`)
+              console.log(`   ⚠️  WARNING: Not using real-time API results - scores may be outdated`)
+            }
+          } catch (error) {
+            console.log(`   ⚠️  Could not check Game table: ${error}`)
           }
-        } catch (error) {
-          console.log(`   ⚠️  Could not check Game table: ${error}`)
         }
         
-        // If no scores in database, try fetching from API
-        if (homeScore === null || awayScore === null) {
-          const gameResult = await fetchGameResults(gameData.sportKey, gameData.gameId, gameData.homeTeam, gameData.awayTeam)
-          
-          if (!gameResult || !gameResult.completed) {
-            if (gameShouldHaveStarted) {
-              // Game should have started but no results - log for manual review
-              const hoursSinceStart = commenceTime ? Math.floor((now.getTime() - commenceTime.getTime()) / (1000 * 60 * 60)) : 0
-              if (hoursSinceStart >= 4) {
-                // Game should be finished by now (most games are 2-3 hours)
-                console.log(`   ⚠️  WARNING: Game started ${hoursSinceStart} hours ago but results not available. May need manual settlement.`)
-                console.log(`   📋 Game ID: ${gameData.gameId}, Teams: ${gameData.homeTeam} vs ${gameData.awayTeam}`)
-                console.log(`   📋 Affected bets: ${gameData.bets.length}`)
+        // Process API results if available
+        if (gameResult && gameResult.completed) {
+          // Extract REAL-TIME scores from API - handle different score formats
+          console.log(`   ✅ Real-time API results received - processing scores...`)
+          if (Array.isArray(gameResult.scores)) {
+            // If scores is an array of objects with name/score
+            if (gameResult.scores[0]?.name && gameResult.scores[0]?.score) {
+              const homeScoreData = gameResult.scores.find(s => 
+                s.name === gameData.homeTeam || 
+                s.name === gameResult.home_team ||
+                s.name?.toLowerCase().includes(gameData.homeTeam.toLowerCase())
+              )
+              const awayScoreData = gameResult.scores.find(s => 
+                s.name === gameData.awayTeam || 
+                s.name === gameResult.away_team ||
+                s.name?.toLowerCase().includes(gameData.awayTeam.toLowerCase())
+              )
+              
+              if (homeScoreData && awayScoreData) {
+                homeScore = parseInt(homeScoreData.score)
+                awayScore = parseInt(awayScoreData.score)
               } else {
-                console.log(`   ⏳ Game started ${hoursSinceStart} hours ago, may still be in progress`)
+                // Try by index if names don't match
+                homeScore = parseInt(gameResult.scores[0]?.score || gameResult.scores[0] || '0')
+                awayScore = parseInt(gameResult.scores[1]?.score || gameResult.scores[1] || '0')
               }
             } else {
-              console.log(`   ⏳ Game not completed yet or results not available`)
+              // If scores is an array of numbers/strings
+              homeScore = parseInt(gameResult.scores[0] || '0')
+              awayScore = parseInt(gameResult.scores[1] || '0')
             }
-            continue
-          }
-          
-          // Extract scores from API - handle different score formats
-          if (Array.isArray(gameResult.scores)) {
-          // If scores is an array of objects with name/score
-          if (gameResult.scores[0]?.name && gameResult.scores[0]?.score) {
-            const homeScoreData = gameResult.scores.find(s => 
-              s.name === gameData.homeTeam || 
-              s.name === gameResult.home_team ||
-              s.name?.toLowerCase().includes(gameData.homeTeam.toLowerCase())
-            )
-            const awayScoreData = gameResult.scores.find(s => 
-              s.name === gameData.awayTeam || 
-              s.name === gameResult.away_team ||
-              s.name?.toLowerCase().includes(gameData.awayTeam.toLowerCase())
-            )
-            
-            if (homeScoreData && awayScoreData) {
-              homeScore = parseInt(homeScoreData.score)
-              awayScore = parseInt(awayScoreData.score)
-            } else {
-              // Try by index if names don't match
-              homeScore = parseInt(gameResult.scores[0]?.score || gameResult.scores[0] || '0')
-              awayScore = parseInt(gameResult.scores[1]?.score || gameResult.scores[1] || '0')
-            }
-          } else {
-            // If scores is an array of numbers/strings
-            homeScore = parseInt(gameResult.scores[0] || '0')
-            awayScore = parseInt(gameResult.scores[1] || '0')
-          }
           } else {
             // If scores is an object
             homeScore = parseInt(gameResult.scores[gameData.homeTeam] || gameResult.scores[gameResult.home_team] || '0')
@@ -484,11 +507,13 @@ export async function settleCompletedBets() {
           }
           
           if (isNaN(homeScore) || isNaN(awayScore)) {
-            console.log(`   ❌ Could not parse scores from API response`)
+            console.log(`   ❌ Could not parse real-time scores from API response`)
             continue
           }
           
-          // Update Game table with scores for future reference
+          console.log(`   ✅ Real-time final scores: ${gameData.homeTeam} ${homeScore} - ${gameData.awayTeam} ${awayScore}`)
+          
+          // Update Game table with REAL-TIME scores for future reference
           try {
             await prisma.game.update({
               where: { id: gameData.gameId },
@@ -499,19 +524,21 @@ export async function settleCompletedBets() {
                 endTime: new Date()
               }
             })
+            console.log(`   💾 Saved real-time scores to database`)
           } catch (error) {
             // Game record might not exist, that's okay
             console.log(`   ⚠️  Could not update Game table: ${error}`)
           }
-        }
+        } else {
+          // No API results available
         
-        // At this point, we should have valid scores
+        // At this point, we should have valid scores (preferably from real-time API)
         if (homeScore === null || awayScore === null) {
-          console.log(`   ❌ No valid scores available`)
+          console.log(`   ❌ No valid scores available (neither real-time API nor database)`)
           continue
         }
         
-        console.log(`   📊 Final Score: ${gameData.homeTeam} ${homeScore} - ${gameData.awayTeam} ${awayScore}`)
+        console.log(`   📊 Final Score (Real-Time): ${gameData.homeTeam} ${homeScore} - ${gameData.awayTeam} ${awayScore}`)
         
         // Process each bet for this game
         for (const bet of gameData.bets) {

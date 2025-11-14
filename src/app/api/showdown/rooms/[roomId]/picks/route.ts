@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(
   request: Request,
-  { params }: { params: { roomId: string } }
+  { params }: { params: Promise<{ roomId: string }> | { roomId: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -13,8 +13,9 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const resolvedParams = await Promise.resolve(params)
     const { picks } = await request.json()
-    const { roomId } = params
+    const { roomId } = resolvedParams
 
     if (!picks || !Array.isArray(picks)) {
       return NextResponse.json(
@@ -84,7 +85,7 @@ export async function POST(
 
 export async function GET(
   request: Request,
-  { params }: { params: { roomId: string } }
+  { params }: { params: Promise<{ roomId: string }> | { roomId: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -92,7 +93,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { roomId } = params
+    const resolvedParams = await Promise.resolve(params)
+    const { roomId } = resolvedParams
 
     // Get all picks for this room
     const picks = await prisma.showdownPick.findMany({

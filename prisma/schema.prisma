@@ -14,6 +14,7 @@ model User {
   password      String
   name          String?
   image         String?
+  favoriteTeam  String?  // Team abbreviation (e.g., "LAL", "GSW", "NE")
   balance       Float    @default(10000)
   wins          Int      @default(0)
   losses        Int      @default(0)

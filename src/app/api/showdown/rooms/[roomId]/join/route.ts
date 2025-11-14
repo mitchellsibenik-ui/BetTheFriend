@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(
   request: Request,
-  { params }: { params: { roomId: string } }
+  { params }: { params: Promise<{ roomId: string }> | { roomId: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -13,9 +13,10 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const resolvedParams = await Promise.resolve(params);
     // Check if room exists and is open
     const room = await prisma.showdownRoom.findUnique({
-      where: { id: params.roomId },
+      where: { id: resolvedParams.roomId },
       include: {
         participants: {
           include: {
@@ -70,7 +71,7 @@ export async function POST(
     const participant = await prisma.showdownParticipant.create({
       data: {
         userId: session.user.id,
-        roomId: params.roomId,
+        roomId: resolvedParams.roomId,
         score: 0
       },
       include: {

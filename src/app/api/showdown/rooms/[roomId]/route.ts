@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(
   request: Request,
-  { params }: { params: { roomId: string } }
+  { params }: { params: Promise<{ roomId: string }> | { roomId: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -13,9 +13,10 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const resolvedParams = await Promise.resolve(params)
     const room = await prisma.showdownRoom.findUnique({
       where: {
-        id: params.roomId
+        id: resolvedParams.roomId
       },
       include: {
         creator: {

@@ -6,7 +6,7 @@ export type Friend = {
   avatar?: string
 }
 
-export const SPORTS = ['NFL', 'NBA', 'MLB', 'NHL'];
+export const SPORTS = ['NFL', 'NCAAF', 'NBA', 'MLB', 'NHL'];
 
 export const MOCK_SPORTS = SPORTS.map(s => ({ key: s.toLowerCase(), name: s }));
 

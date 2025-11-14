@@ -7,6 +7,7 @@ const SPORTS_ODDS_API_URL = 'https://api.the-odds-api.com/v4'
 // Map our sport keys to the API's expected format
 const SPORT_KEY_MAP: { [key: string]: string } = {
   'nfl': 'americanfootball_nfl',
+  'ncaaf': 'americanfootball_ncaaf',
   'nba': 'basketball_nba',
   'mlb': 'baseball_mlb',
   'nhl': 'icehockey_nhl',

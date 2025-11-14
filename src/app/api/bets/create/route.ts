@@ -11,6 +11,7 @@ export async function POST(request: Request) {
     }
 
     const data = await request.json()
+    console.log('Bet creation request data:', JSON.stringify(data, null, 2))
 
     const {
       gameId,
@@ -29,7 +30,9 @@ export async function POST(request: Request) {
     } = data
 
     // Validate required fields
+    console.log('Validating fields:', { gameId, senderTeam, receiverTeam, betType, amount, receiverId })
     if (!gameId || !senderTeam || !receiverTeam || !betType || !amount || !receiverId) {
+      console.log('Missing required fields')
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -126,32 +129,42 @@ export async function POST(request: Request) {
     })
 
     // Create notification for receiver
-    await prisma.notification.create({
-      data: {
-        userId: receiverId,
-        type: 'bet',
-        message: `${session.user.username} wants to bet $${amount} on ${gameDetails.away_team} vs ${gameDetails.home_team}`,
-        data: JSON.stringify({
-          betId: bet.id,
-          gameDetails: {
-            id: gameDetails.id,
-            sport_key: gameDetails.sport_key,
-            commence_time: gameDetails.commence_time,
-            home_team: gameDetails.home_team,
-            away_team: gameDetails.away_team,
-            betType: gameDetails.betType,
-            selectedTeam: gameDetails.selectedTeam,
-            odds: gameDetails.odds,
-            point: gameDetails.point,
-            isLiveBet: gameDetails.isLiveBet
-          }
-        })
-      }
-    })
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: receiverId,
+          type: 'bet',
+          message: `${session.user.username || 'Someone'} wants to bet $${amount} on ${gameDetails.away_team} vs ${gameDetails.home_team}`,
+          data: JSON.stringify({
+            betId: bet.id,
+            gameDetails: {
+              id: gameDetails.id,
+              sport_key: gameDetails.sport_key,
+              commence_time: gameDetails.commence_time,
+              home_team: gameDetails.home_team,
+              away_team: gameDetails.away_team,
+              betType: gameDetails.betType,
+              selectedTeam: gameDetails.selectedTeam,
+              odds: gameDetails.odds,
+              point: gameDetails.point,
+              isLiveBet: gameDetails.isLiveBet
+            }
+          })
+        }
+      })
+    } catch (notificationError) {
+      console.error('Failed to create notification:', notificationError)
+      // Don't fail the bet creation if notification fails
+    }
 
     return NextResponse.json(bet)
   } catch (error) {
     console.error('Error creating bet:', error)
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined
+    })
     
     // Handle specific error cases
     if (error instanceof Error) {

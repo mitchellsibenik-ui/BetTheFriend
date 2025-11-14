@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     }
 
     // Validate sport parameter
-    const validSports = ['nfl', 'nba', 'mlb', 'nhl', 'all']
+    const validSports = ['nfl', 'ncaaf', 'nba', 'mlb', 'nhl', 'all']
     if (!validSports.includes(sport.toLowerCase())) {
       return NextResponse.json(
         { error: 'Invalid sport parameter' },
