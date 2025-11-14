@@ -20,8 +20,6 @@ export async function POST(
     const room = await prisma.showdownRoom.findUnique({
       where: { id: roomId },
       include: {
-        sport: true,
-        gameDate: true,
         participants: {
           include: {
             picks: true,
