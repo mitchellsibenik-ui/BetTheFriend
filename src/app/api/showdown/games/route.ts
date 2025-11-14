@@ -20,16 +20,17 @@ export async function GET(request: Request) {
     const sportMap: { [key: string]: string } = {
       'baseball_mlb': 'mlb',
       'americanfootball_nfl': 'nfl',
+      'americanfootball_ncaaf': 'ncaaf',
       'basketball_nba': 'nba',
       'icehockey_nhl': 'nhl'
     }
 
     const mappedSport = sportMap[sport] || 'mlb'
-    console.log('Mapped sport:', mappedSport)
+    console.log('Mapped sport:', mappedSport, 'for date:', date)
 
     // Use the exact same pattern as the sportsbook
     const games = await oddsApi.getOdds(mappedSport)
-    console.log('Fetched games from oddsApi:', games.length)
+    console.log('Fetched games from oddsApi:', games.length, 'total games')
 
     if (!games || !Array.isArray(games)) {
       console.error('Invalid API response:', games)
@@ -39,21 +40,36 @@ export async function GET(request: Request) {
       )
     }
 
-    // Filter games for the specific date and format them
+    // Filter games for the specific date and format them similar to sportsbook
     const formattedGames = games
       .filter(game => {
+        if (!game.commence_time) return false
         const gameDate = new Date(game.commence_time).toISOString().split('T')[0]
-        return gameDate === date
+        const matches = gameDate === date
+        if (matches) {
+          console.log('Match found:', game.home_team, 'vs', game.away_team, 'on', gameDate)
+        }
+        return matches
       })
-      .map(game => ({
-        id: game.id,
-        sport_key: sport,
-        sport_title: sport.replace('_', ' ').toUpperCase(),
-        commence_time: game.commence_time,
-        home_team: game.home_team,
-        away_team: game.away_team,
-        moneyline: game.bookmakers?.[0]?.markets?.find(m => m.key === 'h2h')?.outcomes || []
-      }))
+      .map(game => {
+        // Get moneyline odds from first bookmaker (same as sportsbook)
+        const bookmaker = game.bookmakers?.[0]
+        const moneylineMarket = bookmaker?.markets?.find(m => m.key === 'h2h')
+        const moneylineOutcomes = moneylineMarket?.outcomes || []
+        
+        return {
+          id: game.id,
+          sport_key: sport,
+          sport_title: sport.replace('_', ' ').toUpperCase(),
+          commence_time: game.commence_time,
+          home_team: game.home_team,
+          away_team: game.away_team,
+          moneyline: moneylineOutcomes.map(outcome => ({
+            name: outcome.name,
+            price: outcome.price
+          }))
+        }
+      })
 
     console.log('Formatted games for date', date, ':', formattedGames.length)
     return NextResponse.json(formattedGames)

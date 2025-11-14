@@ -107,21 +107,32 @@ export default function ShowdownRoomPage() {
         setFriends(friendsData.friends || [])
       }
 
-      // Then fetch games using the room data
+      // Then fetch games using the room data (same API as sportsbook)
+      console.log('Fetching games for sport:', roomData.sport, 'date:', roomData.gameDate)
       const gamesRes = await fetch(`/api/showdown/games?sport=${roomData.sport}&date=${roomData.gameDate}`)
       if (!gamesRes.ok) {
-        throw new Error('Failed to fetch games data')
+        const errorData = await gamesRes.json().catch(() => ({}))
+        console.error('Failed to fetch games:', errorData)
+        throw new Error(errorData.error || 'Failed to fetch games data')
       }
       const gamesData = await gamesRes.json()
+      console.log('Fetched games:', gamesData.length, 'games')
 
-      setGames(gamesData)
+      if (!Array.isArray(gamesData)) {
+        console.error('Games data is not an array:', gamesData)
+        setGames([])
+        setPicks([])
+        toast.error('No games found for this date. Please try a different date.')
+      } else {
+        setGames(gamesData)
 
-      // Initialize picks array
-      const initialPicks = gamesData.map((game: Game) => ({
-        gameId: game.id,
-        selectedTeam: ''
-      }))
-      setPicks(initialPicks)
+        // Initialize picks array
+        const initialPicks = gamesData.map((game: Game) => ({
+          gameId: game.id,
+          selectedTeam: ''
+        }))
+        setPicks(initialPicks)
+      }
     } catch (err) {
       console.error('Error fetching room data:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch room data')
@@ -350,11 +361,17 @@ export default function ShowdownRoomPage() {
         </div>
 
         {/* Games Grid */}
+        {games.length === 0 ? (
+          <div className="bg-gray-800 rounded-lg p-8 border border-gray-700 text-center">
+            <p className="text-gray-400 text-lg mb-2">No games found for {room.sportTitle} on {new Date(room.gameDate).toLocaleDateString()}</p>
+            <p className="text-gray-500 text-sm">Please try selecting a different date when creating the showdown room.</p>
+          </div>
+        ) : (
         <div className="grid gap-4">
           {games.map((game) => {
             const pick = picks.find(p => p.gameId === game.id)
-            const homeTeamOdds = game.moneyline.find(m => m.name === game.home_team)
-            const awayTeamOdds = game.moneyline.find(m => m.name === game.away_team)
+            const homeTeamOdds = game.moneyline?.find((m: any) => m.name === game.home_team)
+            const awayTeamOdds = game.moneyline?.find((m: any) => m.name === game.away_team)
             
             return (
               <div
@@ -432,6 +449,7 @@ export default function ShowdownRoomPage() {
             )
           })}
         </div>
+        )}
 
         {/* Participants */}
         <div className="mt-8">

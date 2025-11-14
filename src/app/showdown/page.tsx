@@ -207,6 +207,10 @@ export default function ShowdownPage() {
 
       const newRoom = await response.json()
       toast.success('Showdown room created successfully!')
+      
+      // Trigger balance update event
+      window.dispatchEvent(new Event('balanceUpdate'))
+      
       setIsCreateModalOpen(false)
       setNewRoomData({
         name: '',
@@ -215,7 +219,9 @@ export default function ShowdownPage() {
         sportTitle: 'MLB',
         gameDate: new Date().toISOString().split('T')[0]
       })
-      fetchData()
+      
+      // Redirect to the newly created room
+      router.push(`/showdown/room/${newRoom.id}`)
     } catch (err) {
       console.error('Error creating room:', err)
       toast.error(err instanceof Error ? err.message : 'Failed to create room')

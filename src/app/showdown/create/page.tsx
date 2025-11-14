@@ -67,11 +67,11 @@ export default function CreateRoomPage() {
       const data = await response.json()
       toast.success('Room created successfully!')
       
-      // Set a flag in sessionStorage to trigger refresh on showdown page
-      sessionStorage.setItem('showdownRoomCreated', 'true')
+      // Trigger balance update event
+      window.dispatchEvent(new Event('balanceUpdate'))
       
-      // Redirect to showdown page
-      router.push('/showdown')
+      // Redirect directly to the room page
+      router.push(`/showdown/room/${data.id}`)
     } catch (error) {
       console.error('Error creating room:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to create room')
