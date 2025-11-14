@@ -25,8 +25,8 @@ interface BetResult {
   description: string
 }
 
-// Fetch real game results from The Odds API
-async function fetchGameResults(sportKey: string, gameId: string, homeTeam?: string, awayTeam?: string): Promise<GameResult | null> {
+// Fetch real game results from The Odds API with retry logic
+async function fetchGameResults(sportKey: string, gameId: string, homeTeam?: string, awayTeam?: string, retries: number = 2): Promise<GameResult | null> {
   try {
     const apiKey = process.env.NEXT_PUBLIC_ODDS_API_KEY
     if (!apiKey) {
@@ -35,26 +35,44 @@ async function fetchGameResults(sportKey: string, gameId: string, homeTeam?: str
     }
 
     let response
-    // Try different API formats
-    try {
-      // Try with apiKey in query params
-      response = await axios.get(`https://api.the-odds-api.com/v4/sports/${sportKey}/scores`, {
-        params: {
-          apiKey: apiKey
-        }
-      })
-    } catch (error1) {
+    let lastError: any = null
+    
+    // Try different API formats with retries
+    for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        // Try with x-api-key header
+        // Try with apiKey in query params first
         response = await axios.get(`https://api.the-odds-api.com/v4/sports/${sportKey}/scores`, {
-          headers: {
-            'x-api-key': apiKey
-          }
+          params: {
+            apiKey: apiKey
+          },
+          timeout: 10000 // 10 second timeout
         })
-      } catch (error2) {
-        console.error(`Error fetching scores for ${sportKey}:`, error2)
-        return null
+        break // Success, exit retry loop
+      } catch (error1) {
+        lastError = error1
+        try {
+          // Try with x-api-key header
+          response = await axios.get(`https://api.the-odds-api.com/v4/sports/${sportKey}/scores`, {
+            headers: {
+              'x-api-key': apiKey
+            },
+            timeout: 10000
+          })
+          break // Success, exit retry loop
+        } catch (error2) {
+          lastError = error2
+          if (attempt < retries) {
+            // Wait before retry (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
+            continue
+          }
+        }
       }
+    }
+    
+    if (!response) {
+      console.error(`Error fetching scores for ${sportKey} after ${retries + 1} attempts:`, lastError)
+      return null
     }
 
     if (!response.data || !Array.isArray(response.data)) {
@@ -301,12 +319,31 @@ function gradeBet(
   }
 }
 
-// Main settlement function
+/**
+ * Main settlement function - Automatically grades and settles completed bets
+ * 
+ * Flow:
+ * 1. Finds all ACTIVE/ACCEPTED bets that haven't been resolved
+ * 2. Groups bets by game
+ * 3. For each game:
+ *    a. Checks Game table for stored scores (fast path)
+ *    b. Falls back to API if scores not in database
+ *    c. Updates Game table with scores for future reference
+ * 4. Grades each bet based on bet type (moneyline, spread, over/under)
+ * 5. Updates balances, win/loss records, and bet status atomically
+ * 6. Sends notifications to both users
+ * 
+ * Error Handling:
+ * - Retries API calls with exponential backoff
+ * - Logs games that need manual settlement (>4 hours after start, no results)
+ * - Uses database transactions to ensure atomicity
+ * - Continues processing other bets if one fails
+ */
 export async function settleCompletedBets() {
   try {
     console.log('🔍 [BET SETTLEMENT] Checking for completed bets to settle...')
     
-    // Get all active bets (check both ACTIVE and ACCEPTED statuses)
+    // Get all active bets (check both ACTIVE and ACCEPTED statuses for compatibility)
     const activeBets = await prisma.bet.findMany({
       where: { 
         OR: [
@@ -323,7 +360,12 @@ export async function settleCompletedBets() {
     
     if (activeBets.length === 0) {
       console.log('[BET SETTLEMENT] No active bets to settle.')
-      return
+      return {
+        success: true,
+        timestamp: new Date().toISOString(),
+        gamesProcessed: 0,
+        betsProcessed: 0
+      }
     }
     
     console.log(`[BET SETTLEMENT] Found ${activeBets.length} active bet(s) to check`)
@@ -391,7 +433,16 @@ export async function settleCompletedBets() {
           
           if (!gameResult || !gameResult.completed) {
             if (gameShouldHaveStarted) {
-              console.log(`   ⚠️  Game should have started but results not available in API or database. This may need manual settlement.`)
+              // Game should have started but no results - log for manual review
+              const hoursSinceStart = commenceTime ? Math.floor((now.getTime() - commenceTime.getTime()) / (1000 * 60 * 60)) : 0
+              if (hoursSinceStart >= 4) {
+                // Game should be finished by now (most games are 2-3 hours)
+                console.log(`   ⚠️  WARNING: Game started ${hoursSinceStart} hours ago but results not available. May need manual settlement.`)
+                console.log(`   📋 Game ID: ${gameData.gameId}, Teams: ${gameData.homeTeam} vs ${gameData.awayTeam}`)
+                console.log(`   📋 Affected bets: ${gameData.bets.length}`)
+              } else {
+                console.log(`   ⏳ Game started ${hoursSinceStart} hours ago, may still be in progress`)
+              }
             } else {
               console.log(`   ⏳ Game not completed yet or results not available`)
             }
@@ -478,9 +529,10 @@ export async function settleCompletedBets() {
             // Update database based on result
             if (betResult.result === 'push') {
               // Push - return stakes to both users
-              await prisma.$transaction([
+              // Use a transaction to ensure atomicity
+              await prisma.$transaction(async (tx) => {
                 // Update bet status
-                prisma.bet.update({
+                await tx.bet.update({
                   where: { id: bet.id },
                   data: {
                     status: 'RESOLVED',
@@ -488,22 +540,24 @@ export async function settleCompletedBets() {
                     resolvedAt: new Date(),
                     result: betResult.description
                   }
-                }),
-                // Return stake to sender
-                prisma.user.update({
+                })
+                
+                // Return stake to sender (atomic operation)
+                await tx.user.update({
                   where: { id: bet.senderId },
                   data: {
                     balance: { increment: bet.amount }
                   }
-                }),
-                // Return stake to receiver
-                prisma.user.update({
+                })
+                
+                // Return stake to receiver (atomic operation)
+                await tx.user.update({
                   where: { id: bet.receiverId },
                   data: {
                     balance: { increment: bet.amount }
                   }
                 })
-              ])
+              })
               
               // Send push notifications
               await prisma.notification.create({
@@ -526,9 +580,10 @@ export async function settleCompletedBets() {
               
             } else {
               // Win/Loss - update winner's balance and stats
-              await prisma.$transaction([
+              // Use a transaction to ensure atomicity
+              await prisma.$transaction(async (tx) => {
                 // Update bet status
-                prisma.bet.update({
+                await tx.bet.update({
                   where: { id: bet.id },
                   data: {
                     status: 'RESOLVED',
@@ -538,23 +593,25 @@ export async function settleCompletedBets() {
                     loserId: betResult.loserId,
                     result: betResult.description
                   }
-                }),
-                // Update winner's balance and wins
-                prisma.user.update({
+                })
+                
+                // Update winner's balance and wins (atomic operation)
+                await tx.user.update({
                   where: { id: betResult.winnerId! },
                   data: {
                     balance: { increment: betResult.payout },
                     wins: { increment: 1 }
                   }
-                }),
-                // Update loser's losses
-                prisma.user.update({
+                })
+                
+                // Update loser's losses (atomic operation)
+                await tx.user.update({
                   where: { id: betResult.loserId! },
                   data: {
                     losses: { increment: 1 }
                   }
                 })
-              ])
+              })
               
               // Send result notifications
               const winner = betResult.winnerId === bet.senderId ? bet.sender : bet.receiver
@@ -584,18 +641,42 @@ export async function settleCompletedBets() {
             
           } catch (error) {
             console.error(`   ❌ Error grading bet ${bet.id}:`, error)
+            console.error(`   Error details:`, error instanceof Error ? error.message : String(error))
+            // Continue processing other bets even if one fails
           }
         }
         
       } catch (error) {
         console.error(`❌ Error processing game ${gameKey}:`, error)
+        console.error(`Error details:`, error instanceof Error ? error.message : String(error))
+        // Continue processing other games even if one fails
       }
     }
     
     console.log('\n✅ [BET SETTLEMENT] Settlement process completed')
     
+    // Return summary for monitoring
+    return {
+      success: true,
+      timestamp: new Date().toISOString(),
+      gamesProcessed: Object.keys(gameGroups).length,
+      betsProcessed: activeBets.length
+    }
+    
   } catch (error) {
     console.error('❌ [BET SETTLEMENT] Error in settlement process:', error)
+    console.error('Error details:', error instanceof Error ? {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    } : String(error))
+    
+    // Return error info for monitoring
+    return {
+      success: false,
+      timestamp: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }
   }
 }
 

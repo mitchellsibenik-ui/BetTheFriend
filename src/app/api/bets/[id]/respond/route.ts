@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth'
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -14,7 +14,8 @@ export async function POST(
     }
 
     const userId = session.user.id
-    const betId = params.id
+    const resolvedParams = await Promise.resolve(params)
+    const betId = resolvedParams.id
     const { action } = await req.json()
 
     if (!action || !['accept', 'decline'].includes(action)) {
