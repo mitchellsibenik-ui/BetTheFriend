@@ -22,42 +22,80 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
+        const startTime = Date.now()
+        const logPrefix = '[AUTH]'
+        
         try {
+          // Step 1: Validate credentials received
+          console.log(`${logPrefix} [${Date.now()}] Received credentials:`, {
+            hasEmail: !!credentials?.email,
+            emailLength: credentials?.email?.length,
+            hasPassword: !!credentials?.password,
+            passwordLength: credentials?.password?.length
+          })
+          
           if (!credentials?.email || !credentials?.password) {
+            console.log(`${logPrefix} [${Date.now()}] ❌ Missing credentials`)
             return null
           }
 
-          // Find user by email (try lowercase first, then original case)
+          // Step 2: Normalize and search for user
           const normalizedEmail = credentials.email.toLowerCase().trim()
+          const originalEmail = credentials.email.trim()
+          
+          console.log(`${logPrefix} [${Date.now()}] Searching for user:`, {
+            normalizedEmail,
+            originalEmail
+          })
+          
+          // Try normalized email first (most common case)
           let user = await prisma.user.findUnique({
             where: {
               email: normalizedEmail
             }
           })
           
-          // If not found with lowercase, try original case
+          console.log(`${logPrefix} [${Date.now()}] Normalized search result:`, user ? `Found ${user.username}` : 'Not found')
+          
+          // If not found, try original case
           if (!user) {
             user = await prisma.user.findUnique({
               where: {
-                email: credentials.email.trim()
+                email: originalEmail
               }
             })
+            console.log(`${logPrefix} [${Date.now()}] Original case search result:`, user ? `Found ${user.username}` : 'Not found')
           }
 
-          if (!user || !user.password) {
+          // Step 3: Validate user found and has password
+          if (!user) {
+            console.log(`${logPrefix} [${Date.now()}] ❌ User not found for email: ${credentials.email}`)
             return null
           }
 
+          if (!user.password) {
+            console.log(`${logPrefix} [${Date.now()}] ❌ User ${user.username} has no password`)
+            return null
+          }
+
+          console.log(`${logPrefix} [${Date.now()}] ✅ User found: ${user.username} (${user.email})`)
+
+          // Step 4: Compare password
+          console.log(`${logPrefix} [${Date.now()}] Comparing password...`)
           const isCorrectPassword = await bcrypt.compare(
             credentials.password,
             user.password
           )
 
+          console.log(`${logPrefix} [${Date.now()}] Password comparison result:`, isCorrectPassword ? '✅ VALID' : '❌ INVALID')
+
           if (!isCorrectPassword) {
+            console.log(`${logPrefix} [${Date.now()}] ❌ Password incorrect for user: ${user.username}`)
             return null
           }
 
-          return {
+          // Step 5: Return user object for session creation
+          const userObject = {
             id: user.id,
             email: user.email,
             username: user.username,
@@ -67,8 +105,18 @@ export const authOptions: NextAuthOptions = {
             wins: user.wins,
             losses: user.losses
           }
+          
+          const duration = Date.now() - startTime
+          console.log(`${logPrefix} [${Date.now()}] ✅ Login successful for ${user.username} (${duration}ms)`)
+          
+          return userObject
         } catch (error) {
-          console.error('Auth error:', error)
+          const duration = Date.now() - startTime
+          console.error(`${logPrefix} [${Date.now()}] ❌ Auth error after ${duration}ms:`, {
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+            email: credentials?.email
+          })
           return null
         }
       }
@@ -89,17 +137,21 @@ export const authOptions: NextAuthOptions = {
       return token
     },
     async session({ session, token }) {
-      return {
-        ...session,
-        user: {
-          ...session.user,
-          id: token.id,
-          username: token.username,
-          balance: token.balance,
-          wins: token.wins,
-          losses: token.losses
+      // Ensure all user data is properly attached to session
+      if (token && session.user) {
+        return {
+          ...session,
+          user: {
+            ...session.user,
+            id: token.id as string,
+            username: token.username as string,
+            balance: token.balance as number,
+            wins: token.wins as number,
+            losses: token.losses as number
+          }
         }
       }
+      return session
     },
     async redirect({ url, baseUrl }) {
       // Handle logout redirect
