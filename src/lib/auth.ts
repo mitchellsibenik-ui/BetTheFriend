@@ -30,21 +30,31 @@ export const authOptions: NextAuthOptions = {
             throw new Error('Invalid credentials')
           }
 
-          // Find user by email (try lowercase first, then original case)
+          // Find user by email (case-insensitive search)
           const normalizedEmail = credentials.email.toLowerCase().trim()
-          let user = await prisma.user.findUnique({
+          const originalEmail = credentials.email.trim()
+          
+          // Try to find user with either email format
+          let user = await prisma.user.findFirst({
             where: {
-              email: normalizedEmail
+              OR: [
+                { email: normalizedEmail },
+                { email: originalEmail }
+              ]
             }
           })
           
-          // If not found with lowercase, try original case
+          // If still not found, try case-insensitive search using findMany
           if (!user) {
-            user = await prisma.user.findUnique({
+            const allUsers = await prisma.user.findMany({
               where: {
-                email: credentials.email.trim()
+                email: {
+                  contains: normalizedEmail,
+                  mode: 'insensitive'
+                }
               }
             })
+            user = allUsers.find(u => u.email.toLowerCase() === normalizedEmail) || allUsers[0]
           }
 
           if (!user) {
