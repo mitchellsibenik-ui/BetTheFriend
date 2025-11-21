@@ -33,7 +33,8 @@ export default function LoginPage() {
       })
 
       if (result?.error) {
-        setError('Invalid email or password')
+        console.error('Login error:', result.error)
+        setError(result.error === 'CredentialsSignin' ? 'Invalid email or password' : result.error)
         setIsLoading(false)
         return
       }
