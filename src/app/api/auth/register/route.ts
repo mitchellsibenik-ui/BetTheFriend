@@ -35,11 +35,13 @@ export async function POST(request: Request) {
       )
     }
 
-    // Check if user already exists (case-insensitive for username)
+    // Check if user already exists (case-insensitive for username and email)
+    const normalizedEmail = email.toLowerCase().trim()
     const existingUser = await prisma.user.findFirst({
       where: {
         OR: [
-          { email },
+          { email: normalizedEmail },
+          { email: email.trim() },
           { username: username.toLowerCase() }
         ]
       }
