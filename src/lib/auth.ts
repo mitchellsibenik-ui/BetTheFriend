@@ -34,27 +34,28 @@ export const authOptions: NextAuthOptions = {
           const normalizedEmail = credentials.email.toLowerCase().trim()
           const originalEmail = credentials.email.trim()
           
-          // Try to find user with either email format
-          let user = await prisma.user.findFirst({
+          // Try exact match with normalized email first (most common case)
+          let user = await prisma.user.findUnique({
             where: {
-              OR: [
-                { email: normalizedEmail },
-                { email: originalEmail }
-              ]
+              email: normalizedEmail
             }
           })
           
-          // If still not found, try case-insensitive search using findMany
+          // If not found, try original case
           if (!user) {
-            const allUsers = await prisma.user.findMany({
+            user = await prisma.user.findUnique({
               where: {
-                email: {
-                  contains: normalizedEmail,
-                  mode: 'insensitive'
-                }
+                email: originalEmail
               }
             })
-            user = allUsers.find(u => u.email.toLowerCase() === normalizedEmail) || allUsers[0]
+          }
+          
+          // If still not found, try case-insensitive search
+          if (!user) {
+            const allUsers = await prisma.user.findMany({
+              select: { id: true, email: true, username: true, password: true, balance: true, wins: true, losses: true, name: true, image: true }
+            })
+            user = allUsers.find(u => u.email.toLowerCase() === normalizedEmail)
           }
 
           if (!user) {
