@@ -10,23 +10,41 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { senderId, accept } = await request.json()
+    const { senderId, friendshipId, accept } = await request.json()
 
-    if (!senderId || typeof accept !== 'boolean') {
+    if (typeof accept !== 'boolean') {
       return NextResponse.json(
-        { error: 'Sender ID and accept status are required' },
+        { error: 'Accept status is required' },
         { status: 400 }
       )
     }
 
-    // Find the friendship request
-    const friendship = await prisma.friendship.findFirst({
-      where: {
-        senderId: senderId,
-        receiverId: session.user.id,
-        status: 'PENDING'
-      }
-    })
+    // Find the friendship request - support both friendshipId and senderId
+    let friendship = null
+    if (friendshipId) {
+      // If friendshipId is provided, use it directly
+      friendship = await prisma.friendship.findFirst({
+        where: {
+          id: friendshipId,
+          receiverId: session.user.id,
+          status: 'PENDING'
+        }
+      })
+    } else if (senderId) {
+      // If senderId is provided, find by senderId
+      friendship = await prisma.friendship.findFirst({
+        where: {
+          senderId: senderId,
+          receiverId: session.user.id,
+          status: 'PENDING'
+        }
+      })
+    } else {
+      return NextResponse.json(
+        { error: 'Either senderId or friendshipId is required' },
+        { status: 400 }
+      )
+    }
 
     if (!friendship) {
       return NextResponse.json(
