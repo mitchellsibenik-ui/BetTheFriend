@@ -63,9 +63,6 @@ export default function FriendRequestsInbox() {
       if (newRequests.length > requests.length) {
         const newCount = newRequests.length - requests.length
         setNotification(`${newCount} new friend request${newCount > 1 ? 's' : ''}`)
-        // Play notification sound
-        const audio = new Audio('/notification.mp3')
-        audio.play().catch(() => {}) // Ignore errors if audio fails to play
       }
 
       setRequests(newRequests)
