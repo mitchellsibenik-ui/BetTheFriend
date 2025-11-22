@@ -40,13 +40,8 @@ export default function LoginPage() {
       }
 
       if (result?.ok) {
-        // Force session refresh
-        window.location.href = '/'
-      } else if (!result?.error && !result?.ok) {
-        // No error but not ok - might be a session issue
-        console.error('Login result:', result)
-        setError('Login completed but session not created. Please try again.')
-        setIsLoading(false)
+        router.replace('/')
+        router.refresh()
       }
     } catch (error) {
       setError('An error occurred. Please try again.')

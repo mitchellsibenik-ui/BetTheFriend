@@ -4,7 +4,7 @@ import { prisma } from './prisma'
 import bcrypt from 'bcryptjs'
 
 export const authOptions: NextAuthOptions = {
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || 'd3jZKGKbrKkugEQhU+gQeOQ0BVy3B/o3JMawwp43nKY=',
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
@@ -22,102 +22,38 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
-        const startTime = Date.now()
-        const logPrefix = '[AUTH]'
-        
-        try {
-          // Step 1: Validate credentials received
-          console.log(`${logPrefix} [${Date.now()}] Received credentials:`, {
-            hasEmail: !!credentials?.email,
-            emailLength: credentials?.email?.length,
-            hasPassword: !!credentials?.password,
-            passwordLength: credentials?.password?.length
-          })
-          
-          if (!credentials?.email || !credentials?.password) {
-            console.log(`${logPrefix} [${Date.now()}] ❌ Missing credentials`)
-            return null
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error('Invalid credentials')
+        }
+
+        const user = await prisma.user.findUnique({
+          where: {
+            email: credentials.email
           }
+        })
 
-          // Step 2: Normalize and search for user
-          const normalizedEmail = credentials.email.toLowerCase().trim()
-          const originalEmail = credentials.email.trim()
-          
-          console.log(`${logPrefix} [${Date.now()}] Searching for user:`, {
-            normalizedEmail,
-            originalEmail
-          })
-          
-          // Try normalized email first (most common case)
-          let user = await prisma.user.findUnique({
-            where: {
-              email: normalizedEmail
-            }
-          })
-          
-          console.log(`${logPrefix} [${Date.now()}] Normalized search result:`, user ? `Found ${user.username}` : 'Not found')
-          
-          // If not found, try original case
-          if (!user) {
-            user = await prisma.user.findUnique({
-              where: {
-                email: originalEmail
-              }
-            })
-            console.log(`${logPrefix} [${Date.now()}] Original case search result:`, user ? `Found ${user.username}` : 'Not found')
-          }
+        if (!user || !user?.password) {
+          throw new Error('No user found with this email')
+        }
 
-          // Step 3: Validate user found and has password
-          if (!user) {
-            console.log(`${logPrefix} [${Date.now()}] ❌ User not found for email: ${credentials.email}`)
-            return null
-          }
+        const isCorrectPassword = await bcrypt.compare(
+          credentials.password,
+          user.password
+        )
 
-          if (!user.password) {
-            console.log(`${logPrefix} [${Date.now()}] ❌ User ${user.username} has no password`)
-            return null
-          }
+        if (!isCorrectPassword) {
+          throw new Error('Incorrect password')
+        }
 
-          console.log(`${logPrefix} [${Date.now()}] ✅ User found: ${user.username} (${user.email})`)
-
-          // Step 4: Compare password
-          console.log(`${logPrefix} [${Date.now()}] Comparing password...`)
-          const isCorrectPassword = await bcrypt.compare(
-            credentials.password,
-            user.password
-          )
-
-          console.log(`${logPrefix} [${Date.now()}] Password comparison result:`, isCorrectPassword ? '✅ VALID' : '❌ INVALID')
-
-          if (!isCorrectPassword) {
-            console.log(`${logPrefix} [${Date.now()}] ❌ Password incorrect for user: ${user.username}`)
-            return null
-          }
-
-          // Step 5: Return user object for session creation
-          const userObject = {
-            id: user.id,
-            email: user.email,
-            username: user.username,
-            name: user.name,
-            image: user.image,
-            balance: user.balance,
-            wins: user.wins,
-            losses: user.losses
-          }
-          
-          const duration = Date.now() - startTime
-          console.log(`${logPrefix} [${Date.now()}] ✅ Login successful for ${user.username} (${duration}ms)`)
-          
-          return userObject
-        } catch (error) {
-          const duration = Date.now() - startTime
-          console.error(`${logPrefix} [${Date.now()}] ❌ Auth error after ${duration}ms:`, {
-            error: error instanceof Error ? error.message : String(error),
-            stack: error instanceof Error ? error.stack : undefined,
-            email: credentials?.email
-          })
-          return null
+        return {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          name: user.name,
+          image: user.image,
+          balance: user.balance,
+          wins: user.wins,
+          losses: user.losses
         }
       }
     })
@@ -137,21 +73,17 @@ export const authOptions: NextAuthOptions = {
       return token
     },
     async session({ session, token }) {
-      // Ensure all user data is properly attached to session
-      if (token && session.user) {
-        return {
-          ...session,
-          user: {
-            ...session.user,
-            id: token.id as string,
-            username: token.username as string,
-            balance: token.balance as number,
-            wins: token.wins as number,
-            losses: token.losses as number
-          }
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          id: token.id,
+          username: token.username,
+          balance: token.balance,
+          wins: token.wins,
+          losses: token.losses
         }
       }
-      return session
     },
     async redirect({ url, baseUrl }) {
       // Handle logout redirect
@@ -168,4 +100,4 @@ export const authOptions: NextAuthOptions = {
       // Handle any cleanup needed on sign out
     }
   }
-} 
+}
