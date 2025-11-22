@@ -26,11 +26,31 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Invalid credentials')
         }
 
-        const user = await prisma.user.findUnique({
+        // Try exact match first, then case-insensitive
+        let user = await prisma.user.findUnique({
           where: {
             email: credentials.email
           }
         })
+
+        // If not found, try lowercase
+        if (!user) {
+          const normalizedEmail = credentials.email.toLowerCase().trim()
+          user = await prisma.user.findUnique({
+            where: {
+              email: normalizedEmail
+            }
+          })
+        }
+
+        // If still not found, try original case trimmed
+        if (!user) {
+          user = await prisma.user.findUnique({
+            where: {
+              email: credentials.email.trim()
+            }
+          })
+        }
 
         if (!user || !user?.password) {
           throw new Error('No user found with this email')
