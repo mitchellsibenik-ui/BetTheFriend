@@ -66,15 +66,19 @@ export const authOptions: NextAuthOptions = {
             return null
           }
 
-        return {
-          id: user.id,
-          email: user.email,
-          username: user.username,
-          name: user.name,
-          image: user.image,
-          balance: user.balance,
-          wins: user.wins,
-          losses: user.losses
+          return {
+            id: user.id,
+            email: user.email,
+            username: user.username,
+            name: user.name,
+            image: user.image,
+            balance: user.balance,
+            wins: user.wins,
+            losses: user.losses
+          }
+        } catch (error) {
+          console.error('Auth error:', error)
+          return null
         }
       }
     })
