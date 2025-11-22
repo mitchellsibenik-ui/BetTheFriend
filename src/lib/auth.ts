@@ -22,63 +22,38 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
-        try {
-          if (!credentials?.email || !credentials?.password) {
-            return null
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error('Invalid credentials')
+        }
+
+        const user = await prisma.user.findUnique({
+          where: {
+            email: credentials.email
           }
+        })
 
-          // Try exact match first, then case-insensitive
-          let user = await prisma.user.findUnique({
-            where: {
-              email: credentials.email
-            }
-          })
+        if (!user || !user?.password) {
+          throw new Error('No user found with this email')
+        }
 
-          // If not found, try lowercase
-          if (!user) {
-            const normalizedEmail = credentials.email.toLowerCase().trim()
-            user = await prisma.user.findUnique({
-              where: {
-                email: normalizedEmail
-              }
-            })
-          }
+        const isCorrectPassword = await bcrypt.compare(
+          credentials.password,
+          user.password
+        )
 
-          // If still not found, try original case trimmed
-          if (!user) {
-            user = await prisma.user.findUnique({
-              where: {
-                email: credentials.email.trim()
-              }
-            })
-          }
+        if (!isCorrectPassword) {
+          throw new Error('Incorrect password')
+        }
 
-          if (!user || !user?.password) {
-            return null
-          }
-
-          const isCorrectPassword = await bcrypt.compare(
-            credentials.password,
-            user.password
-          )
-
-          if (!isCorrectPassword) {
-            return null
-          }
-
-          return {
-            id: user.id,
-            email: user.email,
-            username: user.username,
-            name: user.name,
-            image: user.image,
-            balance: user.balance,
-            wins: user.wins,
-            losses: user.losses
-          }
-        } catch (error) {
-          console.error('Auth error:', error)
-          return null
+        return {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          name: user.name,
+          image: user.image,
+          balance: user.balance,
+          wins: user.wins,
+          losses: user.losses
         }
       }
     })
