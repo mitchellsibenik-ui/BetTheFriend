@@ -48,17 +48,28 @@ export const authOptions: NextAuthOptions = {
 
         console.log('[AUTH] User found:', user.username, 'Comparing password...')
         console.log('[AUTH] Password length received:', credentials.password.length)
+        console.log('[AUTH] Password received (first 10 chars):', credentials.password.substring(0, 10))
         console.log('[AUTH] Password hash in DB:', user.password.substring(0, 20) + '...')
         
+        // Try password comparison
         const isCorrectPassword = await bcrypt.compare(
           credentials.password,
           user.password
         )
+        
+        // Also try with trimmed password in case of whitespace
+        const isCorrectPasswordTrimmed = !isCorrectPassword ? await bcrypt.compare(
+          credentials.password.trim(),
+          user.password
+        ) : false
 
         console.log('[AUTH] Password comparison result:', isCorrectPassword)
+        console.log('[AUTH] Password comparison (trimmed) result:', isCorrectPasswordTrimmed)
+        
+        const finalResult = isCorrectPassword || isCorrectPasswordTrimmed
 
-        if (!isCorrectPassword) {
-          console.log('[AUTH] Password incorrect')
+        if (!finalResult) {
+          console.log('[AUTH] Password incorrect - both attempts failed')
           throw new Error('Incorrect password')
         }
 
