@@ -47,6 +47,17 @@ export async function GET(request: Request) {
     console.log('Filtering games for date:', date)
     console.log('Total games fetched:', games.length)
     
+    // Log first few games to see their dates
+    if (games.length > 0) {
+      console.log('Sample game dates:')
+      games.slice(0, 5).forEach((game, idx) => {
+        if (game.commence_time) {
+          const gameDateStr = game.commence_time.split('T')[0]
+          console.log(`  Game ${idx + 1}: ${game.home_team} vs ${game.away_team} - date: ${gameDateStr}, full time: ${game.commence_time}`)
+        }
+      })
+    }
+    
     // First, filter by date
     const dateFilteredGames = games.filter(game => {
       if (!game.commence_time) {
@@ -63,12 +74,18 @@ export async function GET(request: Request) {
       const matches = gameDateStr === date
       
       if (matches) {
-        console.log('✓ Date match found:', game.home_team, 'vs', game.away_team, 'on', gameDateStr)
+        console.log('✓ Date match found:', game.home_team, 'vs', game.away_team, 'on', gameDateStr, 'full time:', game.commence_time)
       }
       return matches
     })
     
     console.log('Games matching date:', dateFilteredGames.length)
+    
+    // If no matches, log all unique dates found to help debug
+    if (dateFilteredGames.length === 0 && games.length > 0) {
+      const uniqueDates = new Set(games.map(g => g.commence_time?.split('T')[0]).filter(Boolean))
+      console.log('No games found for date', date, '. Available dates in API response:', Array.from(uniqueDates).sort())
+    }
     
     // Then format the games (include all games even if they don't have bookmakers)
     const formattedGames = dateFilteredGames
