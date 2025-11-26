@@ -528,21 +528,24 @@ export default function SportsbookPage() {
   }
 
   // Filter games to only show those that haven't started yet
+  // But also include games that started recently (within last 2 hours) in case of timezone issues
   const now = new Date()
+  const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000)
   const filteredGames = games.filter(game => {
     if (!game.commence_time) {
       console.warn('Game missing commence_time:', game.id)
       return false
     }
     const start = new Date(game.commence_time)
-    const isUpcoming = start >= now
+    // Include games that start in the future OR started within the last 2 hours (to handle timezone issues)
+    const isUpcoming = start >= twoHoursAgo
     if (!isUpcoming && games.indexOf(game) < 3) {
-      console.log('Game already started:', game.home_team, 'vs', game.away_team, 'start:', start, 'now:', now)
+      console.log('Game filtered out:', game.home_team, 'vs', game.away_team, 'start:', start, 'now:', now, 'twoHoursAgo:', twoHoursAgo)
     }
     return isUpcoming
   })
   
-  console.log('Sportsbook: Total games:', games.length, 'Upcoming games:', filteredGames.length)
+  console.log('Sportsbook: Total games:', games.length, 'Filtered games:', filteredGames.length)
 
   if (status === 'loading') {
     return (

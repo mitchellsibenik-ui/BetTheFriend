@@ -213,7 +213,7 @@ export const oddsApi = {
           data: data
         })
         
-        // Check for quota/credits errors
+        // Check for quota/credits errors - these should be thrown
         if (status === 429 || 
             data?.message?.includes('quota') || 
             data?.message?.includes('credits') ||
@@ -222,12 +222,19 @@ export const oddsApi = {
           throw new Error('API quota exceeded. You have used all available credits. Please upgrade your plan or wait for quota reset.')
         }
         
+        // Authentication errors should be thrown
         if (status === 401) {
           console.error('⚠️ API AUTHENTICATION ERROR - Invalid API key')
           throw new Error('Invalid API key or authentication failed')
         }
+        
+        // For other errors (network, timeout, etc.), return empty array so app doesn't break
+        console.warn('API error (non-critical), returning empty array:', status)
+        return []
       }
-      throw error
+      // For non-Axios errors, return empty array
+      console.warn('Non-Axios error, returning empty array')
+      return []
     }
   },
 
