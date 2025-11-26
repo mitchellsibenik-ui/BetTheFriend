@@ -117,6 +117,9 @@ export default function ShowdownRoomPage() {
       }
       const gamesData = await gamesRes.json()
       console.log('Fetched games:', gamesData.length, 'games')
+      console.log('Games data:', gamesData)
+      console.log('Game IDs received:', gamesData.map((g: Game) => g.id))
+      console.log('Game matchups received:', gamesData.map((g: Game) => `${g.away_team} @ ${g.home_team}`))
 
       if (!Array.isArray(gamesData)) {
         console.error('Games data is not an array:', gamesData)
