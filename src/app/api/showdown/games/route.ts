@@ -41,13 +41,31 @@ export async function GET(request: Request) {
     }
 
     // Filter games for the specific date and format them similar to sportsbook
+    // The date parameter is in YYYY-MM-DD format. We need to compare it with game commence_time dates.
+    // Since commence_time is in ISO format (UTC), we'll compare dates in UTC to be consistent.
+    console.log('Filtering games for date:', date)
+    
     const formattedGames = games
       .filter(game => {
         if (!game.commence_time) return false
-        const gameDate = new Date(game.commence_time).toISOString().split('T')[0]
-        const matches = gameDate === date
+        
+        // Parse the target date (YYYY-MM-DD) - treat it as UTC midnight
+        const targetDateObj = new Date(date + 'T00:00:00.000Z')
+        const targetDateStr = targetDateObj.toISOString().split('T')[0]
+        
+        // Parse the game commence_time and get its UTC date
+        const gameDateObj = new Date(game.commence_time)
+        const gameDateStr = gameDateObj.toISOString().split('T')[0]
+        
+        const matches = gameDateStr === targetDateStr
+        
         if (matches) {
-          console.log('Match found:', game.home_team, 'vs', game.away_team, 'on', gameDate)
+          console.log('✓ Match found:', game.home_team, 'vs', game.away_team, 'on', gameDateStr, '(commence_time:', game.commence_time, ')')
+        } else {
+          // Only log first few non-matches to avoid spam
+          if (games.indexOf(game) < 3) {
+            console.log('✗ No match:', game.home_team, 'vs', game.away_team, 'gameDate:', gameDateStr, 'targetDate:', targetDateStr)
+          }
         }
         return matches
       })

@@ -363,8 +363,9 @@ export default function ShowdownRoomPage() {
         {/* Games Grid */}
         {games.length === 0 ? (
           <div className="bg-gray-800 rounded-lg p-8 border border-gray-700 text-center">
-            <p className="text-gray-400 text-lg mb-2">No games found for {room.sportTitle} on {new Date(room.gameDate).toLocaleDateString()}</p>
+            <p className="text-gray-400 text-lg mb-2">No games found for {room.sportTitle} on {room.gameDate}</p>
             <p className="text-gray-500 text-sm">Please try selecting a different date when creating the showdown room.</p>
+            <p className="text-gray-600 text-xs mt-2">Debug: Room date stored as "{room.gameDate}"</p>
           </div>
         ) : (
         <div className="grid gap-4">

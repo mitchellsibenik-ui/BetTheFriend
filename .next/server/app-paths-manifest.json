@@ -1,1 +1,7 @@
-{}
+{
+  "/showdown/page": "app/showdown/page.js",
+  "/showdown/room/[roomId]/page": "app/showdown/room/[roomId]/page.js",
+  "/auth/login/page": "app/auth/login/page.js",
+  "/api/chat/unread/route": "app/api/chat/unread/route.js",
+  "/page": "app/page.js"
+}

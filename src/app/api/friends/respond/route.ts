@@ -67,12 +67,13 @@ export async function POST(request: Request) {
     }
 
     // Delete the notification for this friend request
+    const actualSenderId = friendship.senderId
     await prisma.notification.deleteMany({
       where: {
         userId: session.user.id,
         type: 'friend_request',
         data: {
-          contains: `"senderId":"${senderId}"`
+          contains: `"senderId":"${actualSenderId}"`
         }
       }
     })

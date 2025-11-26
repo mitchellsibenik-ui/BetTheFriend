@@ -125,6 +125,8 @@ export async function POST(request: Request) {
 
     const { name, entryFee, sport, sportTitle, gameDate } = await request.json()
 
+    console.log('[Create Room] Received data:', { name, entryFee, sport, sportTitle, gameDate })
+
     if (!name || !entryFee || !sport || !sportTitle || !gameDate) {
       return NextResponse.json(
         { error: 'Missing required fields' },
@@ -168,10 +170,12 @@ export async function POST(request: Request) {
           entryFee,
           sport,
           sportTitle,
-          gameDate,
+          gameDate, // Store as YYYY-MM-DD string
           creatorId: session.user.id
         }
       })
+      
+      console.log('[Create Room] Created room with gameDate:', newRoom.gameDate)
 
       // Add creator as first participant
       await tx.showdownParticipant.create({
