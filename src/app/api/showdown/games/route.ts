@@ -45,31 +45,45 @@ export async function GET(request: Request) {
     // Game commence_time is in ISO format (UTC).
     // We compare the date portion (YYYY-MM-DD) directly to avoid timezone issues.
     console.log('Filtering games for date:', date)
+    console.log('Total games fetched:', games.length)
     
-    const formattedGames = games
-      .filter(game => {
-        if (!game.commence_time) return false
-        
-        // Extract just the date part (YYYY-MM-DD) from the game's commence_time
-        // commence_time is in ISO format like "2025-11-26T02:00:00Z"
-        // We want to compare just the date part: "2025-11-26"
-        const gameDateStr = game.commence_time.split('T')[0]
-        
-        // Direct string comparison of date parts (YYYY-MM-DD)
-        const matches = gameDateStr === date
-        
-        if (matches) {
-          console.log('✓ Match found:', game.home_team, 'vs', game.away_team, 'on', gameDateStr, '(commence_time:', game.commence_time, ')')
-        } else if (games.indexOf(game) < 3) {
-          console.log('✗ No match:', game.home_team, 'vs', game.away_team, 'gameDate:', gameDateStr, 'targetDate:', date)
-        }
-        return matches
-      })
+    // First, filter by date
+    const dateFilteredGames = games.filter(game => {
+      if (!game.commence_time) {
+        console.log('Game missing commence_time:', game.id)
+        return false
+      }
+      
+      // Extract just the date part (YYYY-MM-DD) from the game's commence_time
+      // commence_time is in ISO format like "2025-11-26T02:00:00Z"
+      // We want to compare just the date part: "2025-11-26"
+      const gameDateStr = game.commence_time.split('T')[0]
+      
+      // Direct string comparison of date parts (YYYY-MM-DD)
+      const matches = gameDateStr === date
+      
+      if (matches) {
+        console.log('✓ Date match found:', game.home_team, 'vs', game.away_team, 'on', gameDateStr)
+      }
+      return matches
+    })
+    
+    console.log('Games matching date:', dateFilteredGames.length)
+    
+    // Then format the games (include all games even if they don't have bookmakers)
+    const formattedGames = dateFilteredGames
       .map(game => {
         // Get moneyline odds from first bookmaker (same as sportsbook)
         const bookmaker = game.bookmakers?.[0]
         const moneylineMarket = bookmaker?.markets?.find(m => m.key === 'h2h')
         const moneylineOutcomes = moneylineMarket?.outcomes || []
+        
+        // Log if game doesn't have bookmakers or moneyline
+        if (!bookmaker) {
+          console.log('⚠️ Game missing bookmaker:', game.home_team, 'vs', game.away_team)
+        } else if (!moneylineMarket) {
+          console.log('⚠️ Game missing moneyline market:', game.home_team, 'vs', game.away_team, 'bookmaker:', bookmaker.key)
+        }
         
         return {
           id: game.id,
@@ -84,8 +98,13 @@ export async function GET(request: Request) {
           }))
         }
       })
+      // Don't filter out games without moneyline - include them anyway
+      // The frontend can handle games without odds
 
     console.log('Formatted games for date', date, ':', formattedGames.length)
+    console.log('Game IDs:', formattedGames.map(g => g.id))
+    console.log('Game matchups:', formattedGames.map(g => `${g.away_team} @ ${g.home_team}`))
+    
     return NextResponse.json(formattedGames)
   } catch (error) {
     console.error('Error fetching games:', error)
