@@ -205,13 +205,29 @@ export const oddsApi = {
     } catch (error) {
       console.error(`Error fetching odds for ${sportKey}:`, error)
       if (axios.isAxiosError(error)) {
+        const status = error.response?.status
+        const data = error.response?.data
         console.error('API Error details:', {
-          status: error.response?.status,
+          status: status,
           statusText: error.response?.statusText,
-          data: error.response?.data
+          data: data
         })
+        
+        // Check for quota/credits errors
+        if (status === 429 || 
+            data?.message?.includes('quota') || 
+            data?.message?.includes('credits') ||
+            data?.error_code === 'OUT_OF_USAGE_CREDITS') {
+          console.error('⚠️ API QUOTA EXCEEDED - Out of credits!')
+          throw new Error('API quota exceeded. You have used all available credits. Please upgrade your plan or wait for quota reset.')
+        }
+        
+        if (status === 401) {
+          console.error('⚠️ API AUTHENTICATION ERROR - Invalid API key')
+          throw new Error('Invalid API key or authentication failed')
+        }
       }
-      return []
+      throw error
     }
   },
 
