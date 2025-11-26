@@ -20,7 +20,15 @@ export default function CreateRoomPage() {
   const [entryFee, setEntryFee] = useState(10)
   const [sport, setSport] = useState('baseball_mlb')
   const [sportTitle, setSportTitle] = useState('MLB')
-  const [gameDate, setGameDate] = useState(new Date().toISOString().split('T')[0])
+  // Initialize with today's date in YYYY-MM-DD format
+  const getTodayDate = () => {
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = String(today.getMonth() + 1).padStart(2, '0')
+    const day = String(today.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+  const [gameDate, setGameDate] = useState(getTodayDate())
   const [loading, setLoading] = useState(false)
 
   const handleSportChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
