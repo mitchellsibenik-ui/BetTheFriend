@@ -129,6 +129,11 @@ export const oddsApi = {
         }
       })
 
+      // Check API quota from response headers
+      const requestsRemaining = response.headers['x-requests-remaining']
+      const requestsUsed = response.headers['x-requests-used']
+      console.log('API Quota - Remaining:', requestsRemaining, 'Used:', requestsUsed)
+
       if (!response.data || !Array.isArray(response.data)) {
         console.error('Invalid API response:', response.data)
         return []

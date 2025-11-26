@@ -28,12 +28,21 @@ export async function GET(
     })
 
     return NextResponse.json(sortedGames)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching odds:', error)
+    console.error('Error message:', error.message)
+    
+    // Check if it's a quota/credits error
+    const isQuotaError = error.message?.includes('quota') || 
+                        error.message?.includes('credits') ||
+                        error.message?.includes('rate limit')
     
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch odds', error_code: 'OUT_OF_USAGE_CREDITS' },
-      { status: 500 }
+      { 
+        error: error instanceof Error ? error.message : 'Failed to fetch odds',
+        error_code: isQuotaError ? 'OUT_OF_USAGE_CREDITS' : 'UNKNOWN_ERROR'
+      },
+      { status: isQuotaError ? 429 : 500 }
     )
   }
 } 
