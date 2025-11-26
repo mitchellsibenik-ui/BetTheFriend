@@ -41,31 +41,27 @@ export async function GET(request: Request) {
     }
 
     // Filter games for the specific date and format them similar to sportsbook
-    // The date parameter is in YYYY-MM-DD format. We need to compare it with game commence_time dates.
-    // Since commence_time is in ISO format (UTC), we'll compare dates in UTC to be consistent.
+    // The date parameter is in YYYY-MM-DD format.
+    // Game commence_time is in ISO format (UTC).
+    // We compare the date portion (YYYY-MM-DD) directly to avoid timezone issues.
     console.log('Filtering games for date:', date)
     
     const formattedGames = games
       .filter(game => {
         if (!game.commence_time) return false
         
-        // Parse the target date (YYYY-MM-DD) - treat it as UTC midnight
-        const targetDateObj = new Date(date + 'T00:00:00.000Z')
-        const targetDateStr = targetDateObj.toISOString().split('T')[0]
+        // Extract just the date part (YYYY-MM-DD) from the game's commence_time
+        // commence_time is in ISO format like "2025-11-26T02:00:00Z"
+        // We want to compare just the date part: "2025-11-26"
+        const gameDateStr = game.commence_time.split('T')[0]
         
-        // Parse the game commence_time and get its UTC date
-        const gameDateObj = new Date(game.commence_time)
-        const gameDateStr = gameDateObj.toISOString().split('T')[0]
-        
-        const matches = gameDateStr === targetDateStr
+        // Direct string comparison of date parts (YYYY-MM-DD)
+        const matches = gameDateStr === date
         
         if (matches) {
           console.log('✓ Match found:', game.home_team, 'vs', game.away_team, 'on', gameDateStr, '(commence_time:', game.commence_time, ')')
-        } else {
-          // Only log first few non-matches to avoid spam
-          if (games.indexOf(game) < 3) {
-            console.log('✗ No match:', game.home_team, 'vs', game.away_team, 'gameDate:', gameDateStr, 'targetDate:', targetDateStr)
-          }
+        } else if (games.indexOf(game) < 3) {
+          console.log('✗ No match:', game.home_team, 'vs', game.away_team, 'gameDate:', gameDateStr, 'targetDate:', date)
         }
         return matches
       })
