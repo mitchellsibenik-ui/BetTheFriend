@@ -193,6 +193,18 @@ export default function SportsbookPage() {
         throw new Error(error.error || 'Failed to fetch games')
       }
       const data = await response.json()
+      console.log('Sportsbook: Fetched games data:', data)
+      console.log('Sportsbook: Number of games:', Array.isArray(data) ? data.length : 'Not an array')
+      
+      if (Array.isArray(data)) {
+        console.log('Sportsbook: Sample games:', data.slice(0, 3).map(g => ({
+          id: g.id,
+          home: g.home_team,
+          away: g.away_team,
+          time: g.commence_time
+        })))
+      }
+      
       setGames(data)
       
       // Cache the data
@@ -515,14 +527,22 @@ export default function SportsbookPage() {
     )
   }
 
-  // Filter games to only show those within the next 48 hours
+  // Filter games to only show those that haven't started yet
   const now = new Date()
-  const in48Hours = new Date(now.getTime() + 48 * 60 * 60 * 1000)
   const filteredGames = games.filter(game => {
+    if (!game.commence_time) {
+      console.warn('Game missing commence_time:', game.id)
+      return false
+    }
     const start = new Date(game.commence_time)
-    // Show all games that haven't started yet (remove the 48 hour restriction)
-    return start >= now
+    const isUpcoming = start >= now
+    if (!isUpcoming && games.indexOf(game) < 3) {
+      console.log('Game already started:', game.home_team, 'vs', game.away_team, 'start:', start, 'now:', now)
+    }
+    return isUpcoming
   })
+  
+  console.log('Sportsbook: Total games:', games.length, 'Upcoming games:', filteredGames.length)
 
   if (status === 'loading') {
     return (
