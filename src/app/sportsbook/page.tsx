@@ -385,6 +385,29 @@ export default function SportsbookPage() {
     if (sport.includes('nba') || sport.includes('nfl') || sport.includes('nhl') || sport.includes('icehockey') || sport.includes('americanfootball_nfl') || sport.includes('basketball_nba') || sport.includes('icehockey_nhl')) {
       const parts = formatted.split(' ')
       
+      // Team name mappings for special cases
+      const teamNameMap: Record<string, string> = {
+        // NHL special cases
+        'Avalanche': 'Avs',
+        'Canadiens': 'Canadiens',
+        'Ducks': 'Ducks',
+        'Capitals': 'Capitals',
+        'Penguins': 'Penguins',
+        // NBA special cases
+        'Cavaliers': 'Cavaliers',
+        '76ers': '76ers',
+        'Heat': 'Heat',
+        'Rockets': 'Rockets',
+        'Pacers': 'Pacers',
+        // NFL special cases
+        'Commanders': 'Commanders',
+        'Browns': 'Browns',
+        'Vikings': 'Vikings',
+        'Cardinals': 'Cardinals',
+        'Jaguars': 'Jaguars',
+        'Texans': 'Texans',
+      }
+      
       // City to abbreviation mapping (no duplicates)
       const cityToAbbrev: Record<string, string> = {
         // NHL
@@ -397,6 +420,7 @@ export default function SportsbookPage() {
         'San Jose': 'SJ',
         'Los Angeles': 'LA',
         'Vegas': 'VGK',
+        'Vegas Golden Knights': 'VGK',
         'St. Louis': 'STL',
         'Minnesota': 'MIN',
         'Nashville': 'NSH',
@@ -414,6 +438,10 @@ export default function SportsbookPage() {
         'Pittsburgh': 'PIT',
         'Philadelphia': 'PHI',
         'Washington': 'WAS',
+        'Anaheim': 'ANA',
+        'Colorado': 'COL',
+        'Cleveland': 'CLE',
+        'Jacksonville': 'JAX',
         'New York Rangers': 'NYR',
         'New York Islanders': 'NYI',
         'Los Angeles Kings': 'LAK',
@@ -425,6 +453,7 @@ export default function SportsbookPage() {
         'Denver': 'DEN',
         'Houston': 'HOU',
         'Indiana': 'IND',
+        'Cleveland': 'CLE',
         'Memphis': 'MEM',
         'Milwaukee': 'MIL',
         'Oklahoma City': 'OKC',
@@ -455,17 +484,33 @@ export default function SportsbookPage() {
         const abbrev = parts[0]
         const teamPart = parts.slice(1).join(' ')
         
+        // For NBA, skip if it's "MIA (FL)" - that's for college
+        if (sport.includes('nba') && teamPart.includes('(FL)')) {
+          // This is a college team, should not be here, but handle it
+          return formatted
+        }
+        
         // Extract just the team name (last word usually)
         if (teamPart.includes('(')) {
+          // Keep names with parentheses for college teams
           return `${abbrev} ${teamPart}`
         } else {
           const teamWords = teamPart.split(' ')
           if (teamWords.length > 1) {
             const lastWord = teamWords[teamWords.length - 1]
+            // Use special mapping if available
+            if (teamNameMap[lastWord]) {
+              return `${abbrev} ${teamNameMap[lastWord]}`
+            }
+            // For number-based names like "76ers", keep full team part
             if (/\d/.test(lastWord)) {
               return `${abbrev} ${teamPart}`
             }
             return `${abbrev} ${lastWord}`
+          }
+          // Use special mapping if available
+          if (teamNameMap[teamPart]) {
+            return `${abbrev} ${teamNameMap[teamPart]}`
           }
           return `${abbrev} ${teamPart}`
         }
@@ -478,13 +523,27 @@ export default function SportsbookPage() {
         if (cityToAbbrev[cityPart]) {
           const abbrev = cityToAbbrev[cityPart]
           const teamPart = parts.slice(i).join(' ')
+          
+          // For NBA, skip if it's "(FL)" - that's for college
+          if (sport.includes('nba') && teamPart.includes('(FL)')) {
+            continue
+          }
+          
           const teamWords = teamPart.split(' ')
           if (teamWords.length > 1) {
             const lastWord = teamWords[teamWords.length - 1]
+            // Use special mapping if available
+            if (teamNameMap[lastWord]) {
+              return `${abbrev} ${teamNameMap[lastWord]}`
+            }
             if (/\d/.test(lastWord)) {
               return `${abbrev} ${teamPart}`
             }
             return `${abbrev} ${lastWord}`
+          }
+          // Use special mapping if available
+          if (teamNameMap[teamPart]) {
+            return `${abbrev} ${teamNameMap[teamPart]}`
           }
           return `${abbrev} ${teamPart}`
         }
@@ -495,13 +554,27 @@ export default function SportsbookPage() {
       if (originalParts.length > 1 && originalParts[0].length <= 3 && originalParts[0] === originalParts[0].toUpperCase()) {
         const abbrev = originalParts[0]
         const teamPart = originalParts.slice(1).join(' ')
+        
+        // For NBA, skip if it's "(FL)" - that's for college
+        if (sport.includes('nba') && teamPart.includes('(FL)')) {
+          return formatted
+        }
+        
         const teamWords = teamPart.split(' ')
         if (teamWords.length > 1) {
           const lastWord = teamWords[teamWords.length - 1]
+          // Use special mapping if available
+          if (teamNameMap[lastWord]) {
+            return `${abbrev} ${teamNameMap[lastWord]}`
+          }
           if (/\d/.test(lastWord)) {
             return `${abbrev} ${teamPart}`
           }
           return `${abbrev} ${lastWord}`
+        }
+        // Use special mapping if available
+        if (teamNameMap[teamPart]) {
+          return `${abbrev} ${teamNameMap[teamPart]}`
         }
         return `${abbrev} ${teamPart}`
       }
@@ -528,11 +601,11 @@ export default function SportsbookPage() {
   }
 
   const getFullTeamNameForHeader = (fullTeamName: string, sportKey: string) => {
-    // For the header, show full team name with city spelled out
+    // For the header, show full team name with city and team name spelled out
     const formatted = formatTeamName(fullTeamName)
     const sport = sportKey?.toLowerCase() || ''
     
-    // NCAAF: Full name without abbreviation (e.g., "Alabama", "Oklahoma", "Miami (FL)")
+    // NCAAF: Full name without abbreviation (e.g., "Alabama", "Oklahoma", "Miami (FL)", "Texas A&M")
     if (sport.includes('ncaaf') || sport.includes('college')) {
       const parts = formatted.split(' ')
       if (parts.length > 1 && parts[0].length === 3 && parts[0] === parts[0].toUpperCase()) {
@@ -541,9 +614,134 @@ export default function SportsbookPage() {
       return formatted
     }
     
-    // NBA, NFL & NHL: Abbreviation + Team name (e.g., "MIA Heat", "BOS Celtics", "PHI Eagles", "CAR Hurricanes", "FLA Panthers")
+    // NBA, NFL & NHL: Show full city name + team name (e.g., "Carolina Hurricanes", "Florida Panthers", "Winnipeg Jets", "Colorado Avalanche")
     if (sport.includes('nba') || sport.includes('nfl') || sport.includes('nhl') || sport.includes('icehockey') || sport.includes('americanfootball_nfl') || sport.includes('basketball_nba') || sport.includes('icehockey_nhl')) {
-      return formatted // formatTeamName should already provide the abbreviation format
+      const parts = formatted.split(' ')
+      
+      // Map abbreviations back to full city names
+      const abbrevToCity: Record<string, string> = {
+        // NHL
+        'CAR': 'Carolina',
+        'FLA': 'Florida',
+        'WPG': 'Winnipeg',
+        'NJ': 'New Jersey',
+        'NY': 'New York',
+        'TB': 'Tampa Bay',
+        'SJ': 'San Jose',
+        'LA': 'Los Angeles',
+        'VGK': 'Vegas',
+        'STL': 'St. Louis',
+        'MIN': 'Minnesota',
+        'NSH': 'Nashville',
+        'CBJ': 'Columbus',
+        'ARI': 'Arizona',
+        'CGY': 'Calgary',
+        'EDM': 'Edmonton',
+        'VAN': 'Vancouver',
+        'OTT': 'Ottawa',
+        'MTL': 'Montreal',
+        'TOR': 'Toronto',
+        'BUF': 'Buffalo',
+        'BOS': 'Boston',
+        'DET': 'Detroit',
+        'PIT': 'Pittsburgh',
+        'PHI': 'Philadelphia',
+        'WAS': 'Washington',
+        'ANA': 'Anaheim',
+        'COL': 'Colorado',
+        'NYR': 'New York',
+        'NYI': 'New York',
+        'LAK': 'Los Angeles',
+        // NBA
+        'MIA': 'Miami',
+        'ATL': 'Atlanta',
+        'CHI': 'Chicago',
+        'DAL': 'Dallas',
+        'DEN': 'Denver',
+        'HOU': 'Houston',
+        'IND': 'Indiana',
+        'CLE': 'Cleveland',
+        'MEM': 'Memphis',
+        'MIL': 'Milwaukee',
+        'OKC': 'Oklahoma City',
+        'ORL': 'Orlando',
+        'PHX': 'Phoenix',
+        'POR': 'Portland',
+        'SAC': 'Sacramento',
+        'SA': 'San Antonio',
+        'UTA': 'Utah',
+        'GSW': 'Golden State',
+        'LAL': 'Los Angeles',
+        'LAC': 'Los Angeles',
+        'NYK': 'New York',
+        // NFL
+        'GB': 'Green Bay',
+        'KC': 'Kansas City',
+        'LV': 'Las Vegas',
+        'NO': 'New Orleans',
+        'SF': 'San Francisco',
+        'NYG': 'New York',
+        'NYJ': 'New York',
+        'LAC': 'Los Angeles',
+        'LAR': 'Los Angeles',
+        'JAX': 'Jacksonville',
+      }
+      
+      // Reverse team name mappings (for header, show full names)
+      const teamNameReverse: Record<string, string> = {
+        'Avs': 'Avalanche',
+      }
+      
+      // If already has abbreviation, convert to full city name
+      if (parts.length > 1 && parts[0].length <= 3 && parts[0] === parts[0].toUpperCase()) {
+        const abbrev = parts[0]
+        const teamPart = parts.slice(1).join(' ')
+        const fullCity = abbrevToCity[abbrev] || abbrev
+        
+        // Reverse special team name mappings
+        const teamWords = teamPart.split(' ')
+        const lastWord = teamWords[teamWords.length - 1]
+        if (teamNameReverse[lastWord]) {
+          return `${fullCity} ${teamNameReverse[lastWord]}`
+        }
+        
+        return `${fullCity} ${teamPart}`
+      }
+      
+      // If no abbreviation but has city name, ensure team name is included
+      // Check if it's missing the team name (e.g., just "Florida" instead of "Florida Panthers")
+      const cityNames = ['Carolina', 'Florida', 'Winnipeg', 'Colorado', 'Calgary', 'Vegas', 'Minnesota', 'Arizona', 'Washington', 'Anaheim', 'Montreal', 'Pittsburgh', 'Houston', 'Cleveland', 'Indiana']
+      const wordCount = formatted.split(' ').length
+      
+      // If it's just a city name (1-2 words) without team name, try to get team name from original
+      if (cityNames.some(city => formatted.startsWith(city) && wordCount <= 2)) {
+        // Try to get team name from original fullTeamName
+        const originalParts = fullTeamName.split(' ')
+        if (originalParts.length > 1) {
+          // Skip abbreviation if present
+          let startIdx = 0
+          if (originalParts[0].length <= 3 && originalParts[0] === originalParts[0].toUpperCase()) {
+            startIdx = 1
+          }
+          const teamName = originalParts.slice(startIdx).join(' ')
+          
+          // Extract just the team name part (last word usually)
+          if (teamName && !formatted.toLowerCase().includes(teamName.toLowerCase())) {
+            const teamWords = teamName.split(' ')
+            if (teamWords.length > 1) {
+              const lastWord = teamWords[teamWords.length - 1]
+              // Use reverse mapping if available
+              if (teamNameReverse[lastWord]) {
+                return `${formatted} ${teamNameReverse[lastWord]}`
+              }
+              return `${formatted} ${lastWord}`
+            }
+            return `${formatted} ${teamName}`
+          }
+        }
+      }
+      
+      return formatted
     }
     
     // For other sports, return formatted name
