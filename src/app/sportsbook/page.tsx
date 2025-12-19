@@ -659,71 +659,17 @@ export default function SportsbookPage() {
                   }`}>
                     {/* Mobile FanDuel-Style Row Layout */}
                     <div className="sm:hidden">
-                      {/* Game Header */}
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center space-x-3">
-                          {game.status === 'live' && (
-                            <div className="flex items-center space-x-2 bg-red-500/20 px-2 py-1 rounded-full">
-                              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                              <span className="text-red-300 font-bold text-xs">LIVE</span>
-                            </div>
-                          )}
-                          <div className="flex flex-col">
-                            <span className="text-gray-300 text-xs font-medium">
-                              {game.status === 'live' ? (
-                                game.scores ? `${game.scores.away} - ${game.scores.home}` : 'Live Game'
-                              ) : (
-                                new Date(game.commence_time).toLocaleString('en-US', {
-                                  hour: 'numeric',
-                                  minute: '2-digit'
-                                })
-                              )}
-                            </span>
-                            {game.status === 'live' && game.period && (
-                              <span className="text-gray-400 text-xs">
-                                {game.sport_key.includes('baseball') ? `Inning ${game.period}` :
-                                 game.sport_key.includes('basketball') ? `Quarter ${game.period}` :
-                                 game.sport_key.includes('hockey') ? `Period ${game.period}` :
-                                 game.sport_key.includes('football') ? `Quarter ${game.period}` :
-                                 `Period ${game.period}`}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-gray-400 text-xs font-medium">
-                          {formatSportKey(game.sport_key)}
-                        </div>
+                      {/* Matchup Header */}
+                      <div className="text-gray-400 text-xs mb-3 text-center">
+                        {formatTeamName(game.away_team)} @ {formatTeamName(game.home_team)}
                       </div>
 
-                      {/* Team Names - Stacked Vertically */}
-                      <div className="mb-3 text-center">
-                        <div className="text-white font-bold text-sm mb-1">{formatTeamName(game.away_team)}</div>
-                        <div className="text-gray-400 text-xs my-1">@</div>
-                        <div className="text-white font-bold text-sm">{formatTeamName(game.home_team)}</div>
-                      </div>
-
-                      {/* Away Team Buttons Row */}
-                      <div className="mb-2">
-                        <div className="flex space-x-2 items-center justify-center">
-                          {/* Moneyline */}
-                          {h2hMarket && (
-                            <button
-                              onClick={() => handleBetClick(
-                                game,
-                                'moneyline',
-                                'away',
-                                h2hMarket.outcomes.find(o => o.name === game.away_team)?.price || 0
-                              )}
-                              className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg w-[70px] h-[50px] flex items-center justify-center ${
-                                game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
-                              }`}
-                            >
-                              {h2hMarket.outcomes.find(o => o.name === game.away_team)?.price ? 
-                                (h2hMarket.outcomes.find(o => o.name === game.away_team)!.price > 0 ? 
-                                  `+${h2hMarket.outcomes.find(o => o.name === game.away_team)!.price}` : 
-                                  h2hMarket.outcomes.find(o => o.name === game.away_team)!.price) : 'N/A'}
-                            </button>
-                          )}
+                      {/* Away Team Row */}
+                      <div className="flex items-center mb-2">
+                        <div className="text-white font-medium text-sm w-20 flex-shrink-0">
+                          {formatTeamName(game.away_team).split(' ').slice(1).join(' ')}
+                        </div>
+                        <div className="flex space-x-1.5 items-center flex-1">
                           {/* Spread */}
                           {spreadMarket && (
                             <button
@@ -734,12 +680,31 @@ export default function SportsbookPage() {
                                 spreadMarket.outcomes.find(o => o.name === game.away_team)?.price || 0,
                                 spreadMarket.outcomes.find(o => o.name === game.away_team)?.point || 0
                               )}
-                              className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg w-[70px] h-[50px] flex items-center justify-center ${
+                              className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white rounded text-xs font-semibold transition-all duration-200 w-[55px] h-[36px] flex items-center justify-center ${
                                 game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
                               }`}
                             >
                               {spreadMarket.outcomes.find(o => o.name === game.away_team)?.point ? 
                                 `${(spreadMarket.outcomes.find(o => o.name === game.away_team)?.point || 0) > 0 ? '+' : ''}${spreadMarket.outcomes.find(o => o.name === game.away_team)?.point}` : 'N/A'}
+                            </button>
+                          )}
+                          {/* Moneyline */}
+                          {h2hMarket && (
+                            <button
+                              onClick={() => handleBetClick(
+                                game,
+                                'moneyline',
+                                'away',
+                                h2hMarket.outcomes.find(o => o.name === game.away_team)?.price || 0
+                              )}
+                              className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white rounded text-xs font-semibold transition-all duration-200 w-[55px] h-[36px] flex items-center justify-center ${
+                                game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
+                              }`}
+                            >
+                              {h2hMarket.outcomes.find(o => o.name === game.away_team)?.price ? 
+                                (h2hMarket.outcomes.find(o => o.name === game.away_team)!.price > 0 ? 
+                                  `+${h2hMarket.outcomes.find(o => o.name === game.away_team)!.price}` : 
+                                  h2hMarket.outcomes.find(o => o.name === game.away_team)!.price) : 'N/A'}
                             </button>
                           )}
                           {/* Total Over */}
@@ -752,38 +717,22 @@ export default function SportsbookPage() {
                                 totalMarket.outcomes.find(o => o.name.toLowerCase() === 'over')?.price || 0,
                                 totalMarket.outcomes.find(o => o.name.toLowerCase() === 'over')?.point || 0
                               )}
-                              className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg w-[70px] h-[50px] flex items-center justify-center ${
+                              className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white rounded text-xs font-semibold transition-all duration-200 w-[55px] h-[36px] flex items-center justify-center ${
                                 game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
                               }`}
                             >
-                              O{totalMarket.outcomes.find(o => o.name.toLowerCase() === 'over')?.point || ''}
+                              o{totalMarket.outcomes.find(o => o.name.toLowerCase() === 'over')?.point || ''}
                             </button>
                           )}
                         </div>
                       </div>
 
-                      {/* Home Team Buttons Row */}
-                      <div className="mb-1">
-                        <div className="flex space-x-2 items-center justify-center">
-                          {/* Moneyline */}
-                          {h2hMarket && (
-                            <button
-                              onClick={() => handleBetClick(
-                                game,
-                                'moneyline',
-                                'home',
-                                h2hMarket.outcomes.find(o => o.name === game.home_team)?.price || 0
-                              )}
-                              className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg w-[70px] h-[50px] flex items-center justify-center ${
-                                game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
-                              }`}
-                            >
-                              {h2hMarket.outcomes.find(o => o.name === game.home_team)?.price ? 
-                                (h2hMarket.outcomes.find(o => o.name === game.home_team)!.price > 0 ? 
-                                  `+${h2hMarket.outcomes.find(o => o.name === game.home_team)!.price}` : 
-                                  h2hMarket.outcomes.find(o => o.name === game.home_team)!.price) : 'N/A'}
-                            </button>
-                          )}
+                      {/* Home Team Row */}
+                      <div className="flex items-center mb-1">
+                        <div className="text-white font-medium text-sm w-20 flex-shrink-0">
+                          {formatTeamName(game.home_team).split(' ').slice(1).join(' ')}
+                        </div>
+                        <div className="flex space-x-1.5 items-center flex-1">
                           {/* Spread */}
                           {spreadMarket && (
                             <button
@@ -794,12 +743,31 @@ export default function SportsbookPage() {
                                 spreadMarket.outcomes.find(o => o.name === game.home_team)?.price || 0,
                                 spreadMarket.outcomes.find(o => o.name === game.home_team)?.point || 0
                               )}
-                              className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg w-[70px] h-[50px] flex items-center justify-center ${
+                              className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white rounded text-xs font-semibold transition-all duration-200 w-[55px] h-[36px] flex items-center justify-center ${
                                 game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
                               }`}
                             >
                               {spreadMarket.outcomes.find(o => o.name === game.home_team)?.point ? 
                                 `${(spreadMarket.outcomes.find(o => o.name === game.home_team)?.point || 0) > 0 ? '+' : ''}${spreadMarket.outcomes.find(o => o.name === game.home_team)?.point}` : 'N/A'}
+                            </button>
+                          )}
+                          {/* Moneyline */}
+                          {h2hMarket && (
+                            <button
+                              onClick={() => handleBetClick(
+                                game,
+                                'moneyline',
+                                'home',
+                                h2hMarket.outcomes.find(o => o.name === game.home_team)?.price || 0
+                              )}
+                              className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white rounded text-xs font-semibold transition-all duration-200 w-[55px] h-[36px] flex items-center justify-center ${
+                                game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
+                              }`}
+                            >
+                              {h2hMarket.outcomes.find(o => o.name === game.home_team)?.price ? 
+                                (h2hMarket.outcomes.find(o => o.name === game.home_team)!.price > 0 ? 
+                                  `+${h2hMarket.outcomes.find(o => o.name === game.home_team)!.price}` : 
+                                  h2hMarket.outcomes.find(o => o.name === game.home_team)!.price) : 'N/A'}
                             </button>
                           )}
                           {/* Total Under */}
@@ -812,16 +780,16 @@ export default function SportsbookPage() {
                                 totalMarket.outcomes.find(o => o.name.toLowerCase() === 'under')?.price || 0,
                                 totalMarket.outcomes.find(o => o.name.toLowerCase() === 'under')?.point || 0
                               )}
-                              className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg w-[70px] h-[50px] flex items-center justify-center ${
+                              className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white rounded text-xs font-semibold transition-all duration-200 w-[55px] h-[36px] flex items-center justify-center ${
                                 game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
                               }`}
                             >
-                              U{totalMarket.outcomes.find(o => o.name.toLowerCase() === 'under')?.point || ''}
+                              u{totalMarket.outcomes.find(o => o.name.toLowerCase() === 'under')?.point || ''}
                             </button>
                           )}
-                          </div>
                         </div>
                       </div>
+                    </div>
 
                     {/* Desktop Game Header - Compact */}
                     <div className="hidden sm:block mb-3">
