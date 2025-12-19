@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
+import { formatTeamName } from '@/lib/utils/teamNames'
 
 interface Bet {
   id: string
@@ -149,7 +150,7 @@ export default function PendingBets() {
 
     let betDescription = ''
     if (bet.betType === 'moneyline') {
-      betDescription = `${bet.senderTeam} (${formatOdds(bet.senderValue, 'moneyline')}) vs ${bet.receiverTeam} (${formatOdds(bet.receiverValue, 'moneyline')})`
+      betDescription = `${formatTeamName(bet.senderTeam)} (${formatOdds(bet.senderValue, 'moneyline')}) vs ${formatTeamName(bet.receiverTeam)} (${formatOdds(bet.receiverValue, 'moneyline')})`
     } else if (bet.betType === 'spread') {
       const senderParts = bet.senderValue.split('|')
       const receiverParts = bet.receiverValue.split('|')
@@ -159,7 +160,7 @@ export default function PendingBets() {
       const receiverOdds = receiverParts[1] ? parseInt(receiverParts[1]) : -110
       const displaySenderSpread = parseFloat(senderSpread) > 0 ? `+${senderSpread}` : senderSpread
       const displayReceiverSpread = parseFloat(receiverSpread) > 0 ? `+${receiverSpread}` : receiverSpread
-      betDescription = `${bet.senderTeam} ${displaySenderSpread} (${senderOdds > 0 ? '+' : ''}${senderOdds}) vs ${bet.receiverTeam} ${displayReceiverSpread} (${receiverOdds > 0 ? '+' : ''}${receiverOdds})`
+      betDescription = `${formatTeamName(bet.senderTeam)} ${displaySenderSpread} (${senderOdds > 0 ? '+' : ''}${senderOdds}) vs ${formatTeamName(bet.receiverTeam)} ${displayReceiverSpread} (${receiverOdds > 0 ? '+' : ''}${receiverOdds})`
     } else if (bet.betType === 'overUnder') {
       const senderParts = bet.senderValue.split('|')
       const receiverParts = bet.receiverValue.split('|')
@@ -171,7 +172,7 @@ export default function PendingBets() {
     }
 
     return {
-      game: `${gameDetails.away_team} @ ${gameDetails.home_team}`,
+      game: `${formatTeamName(gameDetails.away_team)} @ ${formatTeamName(gameDetails.home_team)}`,
       time: gameTime,
       betTime: betTime,
       bet: betDescription,
@@ -281,7 +282,7 @@ export default function PendingBets() {
                     <p className="text-white font-semibold text-sm truncate">
                       {bet.betType === 'overUnder' 
                         ? (isReceiver ? (bet.receiverTeam === 'Over' ? 'Over' : 'Under') : (bet.senderTeam === 'Over' ? 'Over' : 'Under'))
-                        : (isReceiver ? bet.receiverTeam : bet.senderTeam)
+                        : formatTeamName(isReceiver ? bet.receiverTeam : bet.senderTeam)
                       }
                     </p>
                     <p className="text-blue-400 text-xs">
@@ -308,7 +309,7 @@ export default function PendingBets() {
                     <p className="text-white font-semibold text-sm truncate">
                       {bet.betType === 'overUnder' 
                         ? (isReceiver ? (bet.senderTeam === 'Over' ? 'Over' : 'Under') : (bet.receiverTeam === 'Over' ? 'Over' : 'Under'))
-                        : (isReceiver ? bet.senderTeam : bet.receiverTeam)
+                        : formatTeamName(isReceiver ? bet.senderTeam : bet.receiverTeam)
                       }
                     </p>
                     <p className="text-gray-400 text-xs">

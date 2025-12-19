@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import toast from 'react-hot-toast'
 import { formatOdds } from '@/lib/utils/odds'
+import { formatTeamName } from '@/lib/utils/teamNames'
 
 interface BetModalProps {
   isOpen: boolean
@@ -322,9 +323,9 @@ export default function BetModal({ isOpen, onClose, bet, onBetPlaced, isLiveBet 
         {/* Game Info */}
         <div className="bg-gray-800 rounded-lg p-2 mb-3 border border-gray-700">
           <div className="flex justify-between items-center">
-            <div className="text-white font-bold text-sm">{bet.away_team}</div>
+            <div className="text-white font-bold text-sm">{formatTeamName(bet.away_team)}</div>
             <div className="text-gray-400 text-sm">@</div>
-            <div className="text-white font-bold text-sm">{bet.home_team}</div>
+            <div className="text-white font-bold text-sm">{formatTeamName(bet.home_team)}</div>
           </div>
           {isLiveBet && bet.scores && (
             <div className="text-center text-white font-bold text-lg mt-1">
@@ -423,7 +424,7 @@ export default function BetModal({ isOpen, onClose, bet, onBetPlaced, isLiveBet 
                         : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                     }`}
                   >
-                    <div className="font-bold text-sm">{bet.away_team}</div>
+                    <div className="font-bold text-sm">{formatTeamName(bet.away_team)}</div>
                     <div className="text-xs mt-0.5">
                       {selectedBetType === 'moneyline' 
                         ? formatOdds(awayOdds || 0) 
@@ -440,7 +441,7 @@ export default function BetModal({ isOpen, onClose, bet, onBetPlaced, isLiveBet 
                         : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                     }`}
                   >
-                    <div className="font-bold text-sm">{bet.home_team}</div>
+                    <div className="font-bold text-sm">{formatTeamName(bet.home_team)}</div>
                     <div className="text-xs mt-0.5">
                       {selectedBetType === 'moneyline' 
                         ? formatOdds(homeOdds || 0) 
@@ -503,8 +504,8 @@ export default function BetModal({ isOpen, onClose, bet, onBetPlaced, isLiveBet 
               <div className="bg-gray-900 rounded-lg p-2">
                 <div className="text-gray-400 text-xs uppercase tracking-wider mb-0.5">Your Pick</div>
                 <div className="text-white font-bold text-xs mb-0.5">
-                  {selectedTeam === 'home' ? bet.home_team :
-                   selectedTeam === 'away' ? bet.away_team :
+                  {selectedTeam === 'home' ? formatTeamName(bet.home_team) :
+                   selectedTeam === 'away' ? formatTeamName(bet.away_team) :
                    selectedTeam === 'over' ? 'Over' : 'Under'}
                 </div>
                 {selectedBetType === 'spread' && (
@@ -536,8 +537,8 @@ export default function BetModal({ isOpen, onClose, bet, onBetPlaced, isLiveBet 
               <div className="bg-gray-900 rounded-lg p-2">
                 <div className="text-gray-400 text-xs uppercase tracking-wider mb-0.5">Friend's Pick</div>
                 <div className="text-white font-bold text-xs mb-0.5">
-                  {selectedTeam === 'home' ? bet.away_team :
-                   selectedTeam === 'away' ? bet.home_team :
+                  {selectedTeam === 'home' ? formatTeamName(bet.away_team) :
+                   selectedTeam === 'away' ? formatTeamName(bet.home_team) :
                    selectedTeam === 'over' ? 'Under' : 'Over'}
                 </div>
                 {selectedBetType === 'spread' && (

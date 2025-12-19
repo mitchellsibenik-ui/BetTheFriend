@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import toast from 'react-hot-toast'
+import { formatTeamName } from '@/lib/utils/teamNames'
 
 interface Game {
   id: string
@@ -385,7 +386,7 @@ export default function ShowdownRoomPage() {
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h3 className="text-lg font-semibold mb-2">
-                      {game.away_team} @ {game.home_team}
+                      {formatTeamName(game.away_team)} @ {formatTeamName(game.home_team)}
                     </h3>
                     <p className="text-sm text-gray-400">
                       {formatTime(game.commence_time)}
@@ -394,7 +395,7 @@ export default function ShowdownRoomPage() {
                   
                   {room.status === 'completed' && (
                     <div className="text-sm text-gray-400">
-                      Results: {game.home_team} vs {game.away_team}
+                      Results: {formatTeamName(game.home_team)} vs {formatTeamName(game.away_team)}
                     </div>
                   )}
                 </div>
@@ -412,7 +413,7 @@ export default function ShowdownRoomPage() {
                       disabled={!canMakePicks}
                       className="w-full text-left"
                     >
-                      <div className="font-semibold text-white mb-1">{game.away_team}</div>
+                      <div className="font-semibold text-white mb-1">{formatTeamName(game.away_team)}</div>
                       {awayTeamOdds && (
                         <div className="text-sm text-gray-400">
                           {formatOdds(awayTeamOdds.price)}
@@ -432,7 +433,7 @@ export default function ShowdownRoomPage() {
                       disabled={!canMakePicks}
                       className="w-full text-left"
                     >
-                      <div className="font-semibold text-white mb-1">{game.home_team}</div>
+                      <div className="font-semibold text-white mb-1">{formatTeamName(game.home_team)}</div>
                       {homeTeamOdds && (
                         <div className="text-sm text-gray-400">
                           {formatOdds(homeTeamOdds.price)}

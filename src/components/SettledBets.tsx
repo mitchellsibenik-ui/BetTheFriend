@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
+import { formatTeamName } from '@/lib/utils/teamNames'
 
 interface Bet {
   id: string
@@ -156,7 +157,7 @@ export default function SettledBets() {
             <div className="mb-3">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-base font-bold text-white flex-1 min-w-0">
-                  <div className="truncate">{gameDetails.away_team} @ {gameDetails.home_team}</div>
+                  <div className="truncate">{formatTeamName(gameDetails.away_team)} @ {formatTeamName(gameDetails.home_team)}</div>
                 </h3>
                 <div className="flex items-center gap-2 ml-2 flex-shrink-0">
                   <div className={`px-2 py-1 rounded text-xs font-bold ${
@@ -221,7 +222,9 @@ export default function SettledBets() {
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
                     <p className="text-white font-semibold text-sm truncate">
-                      {isReceiver ? bet.receiverTeam : bet.senderTeam}
+                      {(isReceiver ? bet.receiverTeam : bet.senderTeam) === 'Over' || (isReceiver ? bet.receiverTeam : bet.senderTeam) === 'Under' 
+                        ? (isReceiver ? bet.receiverTeam : bet.senderTeam)
+                        : formatTeamName(isReceiver ? bet.receiverTeam : bet.senderTeam)}
                     </p>
                     <p className={`text-xs ${
                       isWinner ? 'text-green-400' : 
@@ -311,7 +314,9 @@ export default function SettledBets() {
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
                     <p className="text-white font-semibold text-sm truncate">
-                      {isReceiver ? bet.senderTeam : bet.receiverTeam}
+                      {(isReceiver ? bet.senderTeam : bet.receiverTeam) === 'Over' || (isReceiver ? bet.senderTeam : bet.receiverTeam) === 'Under'
+                        ? (isReceiver ? bet.senderTeam : bet.receiverTeam)
+                        : formatTeamName(isReceiver ? bet.senderTeam : bet.receiverTeam)}
                     </p>
                     <p className={`text-xs ${
                       isWinner ? 'text-red-400' : 

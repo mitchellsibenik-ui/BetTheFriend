@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
+import { formatTeamName } from '@/lib/utils/teamNames'
 
 interface Bet {
   id: string
@@ -181,7 +182,7 @@ export default function ActiveBets() {
             <div className="mb-3">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-base font-bold text-white flex-1 min-w-0">
-                  <div className="truncate">{gameDetails.away_team} @ {gameDetails.home_team}</div>
+                  <div className="truncate">{formatTeamName(gameDetails.away_team)} @ {formatTeamName(gameDetails.home_team)}</div>
                 </h3>
                 <div className="flex items-center gap-2 ml-2 flex-shrink-0">
                   {isLive && (

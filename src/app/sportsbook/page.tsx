@@ -11,6 +11,7 @@ import { Tab } from '@headlessui/react'
 import SkeletonLoader from '@/components/SkeletonLoader'
 import BetModal from '@/components/BetModal'
 import { formatOdds } from '@/lib/utils/odds'
+import { formatTeamName } from '@/lib/utils/teamNames'
 
 type Step = 'league' | 'friend' | 'picks' | 'wager' | 'complete'
 
@@ -319,44 +320,6 @@ export default function SportsbookPage() {
     })
   }
 
-  const formatTeamName = (fullName: string) => {
-    // Handle specific team names first
-    if (fullName.includes('Los Angeles Chargers')) return 'LAC Chargers'
-    if (fullName.includes('Los Angeles Rams')) return 'LAR Rams'
-    if (fullName.includes('Los Angeles Lakers')) return 'LAL Lakers'
-    if (fullName.includes('Los Angeles Clippers')) return 'LAC Clippers'
-    if (fullName.includes('Los Angeles Dodgers')) return 'LAD Dodgers'
-    if (fullName.includes('Los Angeles Angels')) return 'LAA Angels'
-    if (fullName.includes('Los Angeles Kings')) return 'LAK Kings'
-    if (fullName.includes('New York Jets')) return 'NYJ Jets'
-    if (fullName.includes('New York Giants')) return 'NYG Giants'
-    if (fullName.includes('New York Yankees')) return 'NYY Yankees'
-    if (fullName.includes('New York Mets')) return 'NYM Mets'
-    if (fullName.includes('New York Knicks')) return 'NYK Knicks'
-    if (fullName.includes('New York Rangers')) return 'NYR Rangers'
-    if (fullName.includes('New York Islanders')) return 'NYI Islanders'
-    if (fullName.includes('Golden State')) return 'GSW Warriors'
-    if (fullName.includes('Tampa Bay')) return 'TB Rays'
-    if (fullName.includes('Green Bay')) return 'GB Packers'
-    if (fullName.includes('Las Vegas')) return 'LV Raiders'
-    if (fullName.includes('Kansas City')) return 'KC Chiefs'
-    if (fullName.includes('San Francisco')) return 'SF 49ers'
-    if (fullName.includes('San Diego')) return 'SD Padres'
-    if (fullName.includes('San Antonio')) return 'SA Spurs'
-    if (fullName.includes('San Jose')) return 'SJ Sharks'
-    if (fullName.includes('New Orleans')) return 'NO Saints'
-    if (fullName.includes('Oklahoma City')) return 'OKC Thunder'
-
-    // Fallback to first word abbreviation
-    const parts = fullName.split(' ')
-    if (parts.length > 1) {
-      const city = parts[0]
-      const team = parts.slice(1).join(' ')
-      const cityAbbr = city.length > 4 ? city.substring(0, 3).toUpperCase() : city.toUpperCase()
-      return `${cityAbbr} ${team}`
-    }
-    return fullName
-  }
 
   const formatOdds = (odds: number) => {
     if (!odds) return 'N/A'
@@ -366,6 +329,40 @@ export default function SportsbookPage() {
   const formatSpread = (spread: number) => {
     if (!spread) return ''
     return spread > 0 ? `+${spread}` : spread.toString()
+  }
+
+  const formatSportKey = (sportKey: string) => {
+    // Map sport keys to clean display names
+    const sportMap: Record<string, string> = {
+      'americanfootball_nfl': 'NFL',
+      'americanfootball_ncaaf': 'NCAAF',
+      'basketball_nba': 'NBA',
+      'baseball_mlb': 'MLB',
+      'icehockey_nhl': 'NHL',
+      'americanfootball': 'NFL',
+      'ncaaf': 'NCAAF',
+      'nba': 'NBA',
+      'mlb': 'MLB',
+      'nhl': 'NHL',
+    }
+    
+    // Check for exact match first
+    if (sportMap[sportKey.toLowerCase()]) {
+      return sportMap[sportKey.toLowerCase()]
+    }
+    
+    // Check if it contains any of the keys
+    const lowerKey = sportKey.toLowerCase()
+    for (const [key, value] of Object.entries(sportMap)) {
+      if (lowerKey.includes(key)) {
+        return value
+      }
+    }
+    
+    // Fallback: extract the last part after underscore or use the key itself
+    const parts = sportKey.split('_')
+    const lastPart = parts[parts.length - 1].toUpperCase()
+    return lastPart
   }
 
   const renderOdds = (game: any) => {
@@ -421,7 +418,7 @@ export default function SportsbookPage() {
                 )}
                 className="bg-gray-700 hover:bg-gray-600 rounded p-2 text-left"
               >
-                <div className="text-white">{awayTeam}</div>
+                <div className="text-white">{awayTeam}</div>w
                 <div className="text-green-400">
                   {formatOdds(game.bookmakers[0]?.markets[0]?.outcomes[0]?.price)}
                 </div>
@@ -852,18 +849,19 @@ export default function SportsbookPage() {
                           </div>
                         </div>
                         <div className="text-gray-400 text-xs font-medium">
-                          {game.sport_key.toUpperCase().replace('_', ' ')}
+                          {formatSportKey(game.sport_key)}
                         </div>
                       </div>
 
                       {/* Away Team Row */}
                       <div className="mb-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex flex-col">
-                            <div className="text-white font-bold text-sm">{formatTeamName(game.away_team)}</div>
-                            <div className="text-gray-400 text-xs">@</div>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <div className="text-white font-bold text-sm truncate">{formatTeamName(game.away_team)}</div>
+                            <div className="text-gray-400 text-xs flex-shrink-0">@</div>
+                            <div className="text-white font-bold text-sm truncate">{formatTeamName(game.home_team)}</div>
                           </div>
-                          <div className="flex space-x-2">
+                          <div className="flex space-x-2 items-center flex-shrink-0">
                             {/* Moneyline */}
                             {h2hMarket && (
                               <button
@@ -873,7 +871,7 @@ export default function SportsbookPage() {
                                   'away',
                                   h2hMarket.outcomes.find(o => o.name === game.away_team)?.price || 0
                                 )}
-                                className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg ${
+                                className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg min-w-[60px] text-center ${
                                   game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
                                 }`}
                               >
@@ -893,7 +891,7 @@ export default function SportsbookPage() {
                                   spreadMarket.outcomes.find(o => o.name === game.away_team)?.price || 0,
                                   spreadMarket.outcomes.find(o => o.name === game.away_team)?.point || 0
                                 )}
-                                className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg ${
+                                className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg min-w-[60px] text-center ${
                                   game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
                                 }`}
                               >
@@ -911,7 +909,7 @@ export default function SportsbookPage() {
                                   totalMarket.outcomes.find(o => o.name.toLowerCase() === 'over')?.price || 0,
                                   totalMarket.outcomes.find(o => o.name.toLowerCase() === 'over')?.point || 0
                                 )}
-                                className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg ${
+                                className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg min-w-[60px] text-center ${
                                   game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
                                 }`}
                               >
@@ -924,9 +922,9 @@ export default function SportsbookPage() {
 
                       {/* Home Team Row */}
                       <div className="mb-1">
-                        <div className="flex items-center justify-between">
-                          <div className="text-white font-bold text-sm">{formatTeamName(game.home_team)}</div>
-                          <div className="flex space-x-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex-1 min-w-0"></div>
+                          <div className="flex space-x-2 items-center flex-shrink-0">
                             {/* Moneyline */}
                             {h2hMarket && (
                               <button
@@ -936,7 +934,7 @@ export default function SportsbookPage() {
                                   'home',
                                   h2hMarket.outcomes.find(o => o.name === game.home_team)?.price || 0
                                 )}
-                                className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg ${
+                                className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg min-w-[60px] text-center ${
                                   game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
                                 }`}
                               >
@@ -956,7 +954,7 @@ export default function SportsbookPage() {
                                   spreadMarket.outcomes.find(o => o.name === game.home_team)?.price || 0,
                                   spreadMarket.outcomes.find(o => o.name === game.home_team)?.point || 0
                                 )}
-                                className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg ${
+                                className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg min-w-[60px] text-center ${
                                   game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
                                 }`}
                               >
@@ -974,7 +972,7 @@ export default function SportsbookPage() {
                                   totalMarket.outcomes.find(o => o.name.toLowerCase() === 'under')?.price || 0,
                                   totalMarket.outcomes.find(o => o.name.toLowerCase() === 'under')?.point || 0
                                 )}
-                                className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg ${
+                                className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg min-w-[60px] text-center ${
                                   game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
                                 }`}
                               >
