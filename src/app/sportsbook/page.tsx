@@ -365,165 +365,6 @@ export default function SportsbookPage() {
     return lastPart
   }
 
-  const renderOdds = (game: any) => {
-    const isLive = game.status === 'in_progress'
-    const homeTeam = game.home_team
-    const awayTeam = game.away_team
-
-    return (
-      <div className="bg-gray-800 rounded-lg p-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            {isLive && (
-              <span className="flex items-center">
-                <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse mr-2"></span>
-                <span className="text-red-500 font-medium">LIVE</span>
-              </span>
-            )}
-            <span className="text-gray-400">
-              {new Date(game.commence_time).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </span>
-          </div>
-          {isLive && game.scores && (
-            <div className="text-white font-medium">
-              {game.scores.away_score} - {game.scores.home_score}
-            </div>
-          )}
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <div className="text-gray-400 text-sm">Away</div>
-            <div className="text-white font-medium">{awayTeam}</div>
-          </div>
-          <div className="space-y-2">
-            <div className="text-gray-400 text-sm">Home</div>
-            <div className="text-white font-medium">{homeTeam}</div>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <div className="text-gray-400 text-sm mb-2">Money Line</div>
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                onClick={() => handleBetClick(
-                  game,
-                  'moneyline',
-                  'away',
-                  game.bookmakers[0]?.markets[0]?.outcomes[0]?.price
-                )}
-                className="bg-gray-700 hover:bg-gray-600 rounded p-2 text-left"
-              >
-                <div className="text-white">{awayTeam}</div>w
-                <div className="text-green-400">
-                  {formatOdds(game.bookmakers[0]?.markets[0]?.outcomes[0]?.price)}
-                </div>
-              </button>
-              <button
-                onClick={() => handleBetClick(
-                  game,
-                  'moneyline',
-                  'home',
-                  game.bookmakers[0]?.markets[0]?.outcomes[1]?.price
-                )}
-                className="bg-gray-700 hover:bg-gray-600 rounded p-2 text-left"
-              >
-                <div className="text-white">{homeTeam}</div>
-                <div className="text-green-400">
-                  {formatOdds(game.bookmakers[0]?.markets[0]?.outcomes[1]?.price)}
-                </div>
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <div className="text-gray-400 text-sm mb-2">Spread</div>
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                onClick={() => handleBetClick(
-                  game,
-                  'spread',
-                  'away',
-                  game.bookmakers[0]?.markets[1]?.outcomes[0]?.price,
-                  game.bookmakers[0]?.markets[1]?.outcomes[0]?.point
-                )}
-                className="bg-gray-700 hover:bg-gray-600 rounded p-2 text-left"
-              >
-                <div className="text-white">
-                  {awayTeam} {formatSpread(game.bookmakers[0]?.markets[1]?.outcomes[0]?.point)}
-                </div>
-                <div className="text-green-400">
-                  {formatOdds(game.bookmakers[0]?.markets[1]?.outcomes[0]?.price)}
-                </div>
-              </button>
-              <button
-                onClick={() => handleBetClick(
-                  game,
-                  'spread',
-                  'home',
-                  game.bookmakers[0]?.markets[1]?.outcomes[1]?.price,
-                  game.bookmakers[0]?.markets[1]?.outcomes[1]?.point
-                )}
-                className="bg-gray-700 hover:bg-gray-600 rounded p-2 text-left"
-              >
-                <div className="text-white">
-                  {homeTeam} {formatSpread(game.bookmakers[0]?.markets[1]?.outcomes[1]?.point)}
-                </div>
-                <div className="text-green-400">
-                  {formatOdds(game.bookmakers[0]?.markets[1]?.outcomes[1]?.price)}
-                </div>
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <div className="text-gray-400 text-sm mb-2">Total</div>
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                onClick={() => handleBetClick(
-                  game,
-                  'overUnder',
-                  'over',
-                  game.bookmakers[0]?.markets[2]?.outcomes[0]?.price,
-                  game.bookmakers[0]?.markets[2]?.outcomes[0]?.point
-                )}
-                className="bg-gray-700 hover:bg-gray-600 rounded p-2 text-left"
-              >
-                <div className="text-white">
-                  Over {game.bookmakers[0]?.markets[2]?.outcomes[0]?.point}
-                </div>
-                <div className="text-green-400">
-                  {formatOdds(game.bookmakers[0]?.markets[2]?.outcomes[0]?.price)}
-                </div>
-              </button>
-              <button
-                onClick={() => handleBetClick(
-                  game,
-                  'overUnder',
-                  'under',
-                  game.bookmakers[0]?.markets[2]?.outcomes[1]?.price,
-                  game.bookmakers[0]?.markets[2]?.outcomes[1]?.point
-                )}
-                className="bg-gray-700 hover:bg-gray-600 rounded p-2 text-left"
-              >
-                <div className="text-white">
-                  Under {game.bookmakers[0]?.markets[2]?.outcomes[1]?.point}
-                </div>
-                <div className="text-green-400">
-                  {formatOdds(game.bookmakers[0]?.markets[2]?.outcomes[1]?.price)}
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   // Filter games to only show those that haven't started yet
   // But also include games that started recently (within last 2 hours) in case of timezone issues
   const now = new Date()
@@ -811,7 +652,7 @@ export default function SportsbookPage() {
 
               return (
                 <div key={game.id} className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-purple-600/5 rounded-2xl blur-xl"></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-purple-600/5 rounded-2xl blur-xl" />
                   <div className={`relative bg-gradient-to-br from-white/8 to-white/3 backdrop-blur-xl border rounded-xl p-3 transition-all duration-300 hover:scale-[1.01] hover:shadow-2xl hover:shadow-blue-500/10 ${
                     game.status === 'live' ? 'border-red-500/50 bg-gradient-to-br from-red-500/8 to-red-500/3 shadow-red-500/20' : 'border-white/20 shadow-lg'
                   }`}>
@@ -853,132 +694,130 @@ export default function SportsbookPage() {
                         </div>
                       </div>
 
-                      {/* Away Team Row */}
+                      {/* Team Names - Stacked Vertically */}
+                      <div className="mb-3 text-center">
+                        <div className="text-white font-bold text-sm mb-1">{formatTeamName(game.away_team)}</div>
+                        <div className="text-gray-400 text-xs my-1">@</div>
+                        <div className="text-white font-bold text-sm">{formatTeamName(game.home_team)}</div>
+                      </div>
+
+                      {/* Away Team Buttons Row */}
                       <div className="mb-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <div className="text-white font-bold text-sm truncate">{formatTeamName(game.away_team)}</div>
-                            <div className="text-gray-400 text-xs flex-shrink-0">@</div>
-                            <div className="text-white font-bold text-sm truncate">{formatTeamName(game.home_team)}</div>
-                          </div>
-                          <div className="flex space-x-2 items-center flex-shrink-0">
-                            {/* Moneyline */}
-                            {h2hMarket && (
-                              <button
-                                onClick={() => handleBetClick(
-                                  game,
-                                  'moneyline',
-                                  'away',
-                                  h2hMarket.outcomes.find(o => o.name === game.away_team)?.price || 0
-                                )}
-                                className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg min-w-[60px] text-center ${
-                                  game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
-                                }`}
-                              >
-                                {h2hMarket.outcomes.find(o => o.name === game.away_team)?.price ? 
-                                  (h2hMarket.outcomes.find(o => o.name === game.away_team)!.price > 0 ? 
-                                    `+${h2hMarket.outcomes.find(o => o.name === game.away_team)!.price}` : 
-                                    h2hMarket.outcomes.find(o => o.name === game.away_team)!.price) : 'N/A'}
-                              </button>
-                            )}
-                            {/* Spread */}
-                            {spreadMarket && (
-                              <button
-                                onClick={() => handleBetClick(
-                                  game,
-                                  'spread',
-                                  'away',
-                                  spreadMarket.outcomes.find(o => o.name === game.away_team)?.price || 0,
-                                  spreadMarket.outcomes.find(o => o.name === game.away_team)?.point || 0
-                                )}
-                                className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg min-w-[60px] text-center ${
-                                  game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
-                                }`}
-                              >
-                                {spreadMarket.outcomes.find(o => o.name === game.away_team)?.point ? 
-                                  `${(spreadMarket.outcomes.find(o => o.name === game.away_team)?.point || 0) > 0 ? '+' : ''}${spreadMarket.outcomes.find(o => o.name === game.away_team)?.point}` : 'N/A'}
-                              </button>
-                            )}
-                            {/* Total Over */}
-                            {totalMarket && (
-                              <button
-                                onClick={() => handleBetClick(
-                                  game,
-                                  'overUnder',
-                                  'over',
-                                  totalMarket.outcomes.find(o => o.name.toLowerCase() === 'over')?.price || 0,
-                                  totalMarket.outcomes.find(o => o.name.toLowerCase() === 'over')?.point || 0
-                                )}
-                                className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg min-w-[60px] text-center ${
-                                  game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
-                                }`}
-                              >
-                                O{totalMarket.outcomes.find(o => o.name.toLowerCase() === 'over')?.point || ''}
-                              </button>
-                            )}
-                          </div>
+                        <div className="flex space-x-2 items-center justify-center">
+                          {/* Moneyline */}
+                          {h2hMarket && (
+                            <button
+                              onClick={() => handleBetClick(
+                                game,
+                                'moneyline',
+                                'away',
+                                h2hMarket.outcomes.find(o => o.name === game.away_team)?.price || 0
+                              )}
+                              className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg w-[70px] h-[50px] flex items-center justify-center ${
+                                game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
+                              }`}
+                            >
+                              {h2hMarket.outcomes.find(o => o.name === game.away_team)?.price ? 
+                                (h2hMarket.outcomes.find(o => o.name === game.away_team)!.price > 0 ? 
+                                  `+${h2hMarket.outcomes.find(o => o.name === game.away_team)!.price}` : 
+                                  h2hMarket.outcomes.find(o => o.name === game.away_team)!.price) : 'N/A'}
+                            </button>
+                          )}
+                          {/* Spread */}
+                          {spreadMarket && (
+                            <button
+                              onClick={() => handleBetClick(
+                                game,
+                                'spread',
+                                'away',
+                                spreadMarket.outcomes.find(o => o.name === game.away_team)?.price || 0,
+                                spreadMarket.outcomes.find(o => o.name === game.away_team)?.point || 0
+                              )}
+                              className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg w-[70px] h-[50px] flex items-center justify-center ${
+                                game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
+                              }`}
+                            >
+                              {spreadMarket.outcomes.find(o => o.name === game.away_team)?.point ? 
+                                `${(spreadMarket.outcomes.find(o => o.name === game.away_team)?.point || 0) > 0 ? '+' : ''}${spreadMarket.outcomes.find(o => o.name === game.away_team)?.point}` : 'N/A'}
+                            </button>
+                          )}
+                          {/* Total Over */}
+                          {totalMarket && (
+                            <button
+                              onClick={() => handleBetClick(
+                                game,
+                                'overUnder',
+                                'over',
+                                totalMarket.outcomes.find(o => o.name.toLowerCase() === 'over')?.price || 0,
+                                totalMarket.outcomes.find(o => o.name.toLowerCase() === 'over')?.point || 0
+                              )}
+                              className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg w-[70px] h-[50px] flex items-center justify-center ${
+                                game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
+                              }`}
+                            >
+                              O{totalMarket.outcomes.find(o => o.name.toLowerCase() === 'over')?.point || ''}
+                            </button>
+                          )}
                         </div>
                       </div>
 
-                      {/* Home Team Row */}
+                      {/* Home Team Buttons Row */}
                       <div className="mb-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex-1 min-w-0"></div>
-                          <div className="flex space-x-2 items-center flex-shrink-0">
-                            {/* Moneyline */}
-                            {h2hMarket && (
-                              <button
-                                onClick={() => handleBetClick(
-                                  game,
-                                  'moneyline',
-                                  'home',
-                                  h2hMarket.outcomes.find(o => o.name === game.home_team)?.price || 0
-                                )}
-                                className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg min-w-[60px] text-center ${
-                                  game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
-                                }`}
-                              >
-                                {h2hMarket.outcomes.find(o => o.name === game.home_team)?.price ? 
-                                  (h2hMarket.outcomes.find(o => o.name === game.home_team)!.price > 0 ? 
-                                    `+${h2hMarket.outcomes.find(o => o.name === game.home_team)!.price}` : 
-                                    h2hMarket.outcomes.find(o => o.name === game.home_team)!.price) : 'N/A'}
-                              </button>
-                            )}
-                            {/* Spread */}
-                            {spreadMarket && (
-                              <button
-                                onClick={() => handleBetClick(
-                                  game,
-                                  'spread',
-                                  'home',
-                                  spreadMarket.outcomes.find(o => o.name === game.home_team)?.price || 0,
-                                  spreadMarket.outcomes.find(o => o.name === game.home_team)?.point || 0
-                                )}
-                                className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg min-w-[60px] text-center ${
-                                  game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
-                                }`}
-                              >
-                                {spreadMarket.outcomes.find(o => o.name === game.home_team)?.point ? 
-                                  `${(spreadMarket.outcomes.find(o => o.name === game.home_team)?.point || 0) > 0 ? '+' : ''}${spreadMarket.outcomes.find(o => o.name === game.home_team)?.point}` : 'N/A'}
-                              </button>
-                            )}
-                            {/* Total Under */}
-                            {totalMarket && (
-                              <button
-                                onClick={() => handleBetClick(
-                                  game,
-                                  'overUnder',
-                                  'under',
-                                  totalMarket.outcomes.find(o => o.name.toLowerCase() === 'under')?.price || 0,
-                                  totalMarket.outcomes.find(o => o.name.toLowerCase() === 'under')?.point || 0
-                                )}
-                                className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg min-w-[60px] text-center ${
-                                  game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
-                                }`}
-                              >
-                                U{totalMarket.outcomes.find(o => o.name.toLowerCase() === 'under')?.point || ''}
-                              </button>
-                            )}
+                        <div className="flex space-x-2 items-center justify-center">
+                          {/* Moneyline */}
+                          {h2hMarket && (
+                            <button
+                              onClick={() => handleBetClick(
+                                game,
+                                'moneyline',
+                                'home',
+                                h2hMarket.outcomes.find(o => o.name === game.home_team)?.price || 0
+                              )}
+                              className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg w-[70px] h-[50px] flex items-center justify-center ${
+                                game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
+                              }`}
+                            >
+                              {h2hMarket.outcomes.find(o => o.name === game.home_team)?.price ? 
+                                (h2hMarket.outcomes.find(o => o.name === game.home_team)!.price > 0 ? 
+                                  `+${h2hMarket.outcomes.find(o => o.name === game.home_team)!.price}` : 
+                                  h2hMarket.outcomes.find(o => o.name === game.home_team)!.price) : 'N/A'}
+                            </button>
+                          )}
+                          {/* Spread */}
+                          {spreadMarket && (
+                            <button
+                              onClick={() => handleBetClick(
+                                game,
+                                'spread',
+                                'home',
+                                spreadMarket.outcomes.find(o => o.name === game.home_team)?.price || 0,
+                                spreadMarket.outcomes.find(o => o.name === game.home_team)?.point || 0
+                              )}
+                              className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg w-[70px] h-[50px] flex items-center justify-center ${
+                                game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
+                              }`}
+                            >
+                              {spreadMarket.outcomes.find(o => o.name === game.home_team)?.point ? 
+                                `${(spreadMarket.outcomes.find(o => o.name === game.home_team)?.point || 0) > 0 ? '+' : ''}${spreadMarket.outcomes.find(o => o.name === game.home_team)?.point}` : 'N/A'}
+                            </button>
+                          )}
+                          {/* Total Under */}
+                          {totalMarket && (
+                            <button
+                              onClick={() => handleBetClick(
+                                game,
+                                'overUnder',
+                                'under',
+                                totalMarket.outcomes.find(o => o.name.toLowerCase() === 'under')?.price || 0,
+                                totalMarket.outcomes.find(o => o.name.toLowerCase() === 'under')?.point || 0
+                              )}
+                              className={`bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-3 px-4 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-lg w-[70px] h-[50px] flex items-center justify-center ${
+                                game.status === 'live' ? 'hover:bg-yellow-600/20 hover:border-yellow-400/50' : ''
+                              }`}
+                            >
+                              U{totalMarket.outcomes.find(o => o.name.toLowerCase() === 'under')?.point || ''}
+                            </button>
+                          )}
                           </div>
                         </div>
                       </div>
