@@ -242,6 +242,7 @@ export default function SportsbookPage() {
       }, 60000) // Refresh every 60 seconds for live games instead of 30
       return () => clearInterval(interval)
     }
+    return undefined
   }, [activeTab])
 
   // Remove any stray "y" text nodes from the page
@@ -821,7 +822,6 @@ export default function SportsbookPage() {
                           </div>
                         </div>
                       </div>
-                    </div>
 
                     {/* Desktop Game Header - Compact */}
                     <div className="hidden sm:block mb-3">
