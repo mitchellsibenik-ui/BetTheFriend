@@ -366,6 +366,23 @@ export default function SportsbookPage() {
     return lastPart
   }
 
+  const getTeamNameForRow = (fullTeamName: string) => {
+    // Format the team name first
+    const formatted = formatTeamName(fullTeamName)
+    
+    // Extract just the team name part (remove city abbreviation if present)
+    // Examples: "PHI 76ers" -> "76ers", "MIA Miami (FL)" -> "Miami (FL)", "Miami (FL)" -> "Miami (FL)"
+    const parts = formatted.split(' ')
+    
+    // If it starts with a 3-letter abbreviation (like "PHI", "MIA", etc.), remove it
+    if (parts.length > 1 && parts[0].length === 3 && parts[0] === parts[0].toUpperCase()) {
+      return parts.slice(1).join(' ')
+    }
+    
+    // Otherwise return the full formatted name
+    return formatted
+  }
+
   // Filter games to only show those that haven't started yet
   // But also include games that started recently (within last 2 hours) in case of timezone issues
   const now = new Date()
@@ -665,11 +682,11 @@ export default function SportsbookPage() {
                       </div>
 
                       {/* Away Team Row */}
-                      <div className="flex items-center mb-2">
-                        <div className="text-white font-medium text-sm w-20 flex-shrink-0">
-                          {formatTeamName(game.away_team).split(' ').slice(1).join(' ')}
+                      <div className="flex items-center mb-2 gap-2">
+                        <div className="text-white font-medium text-sm w-24 flex-shrink-0 truncate">
+                          {getTeamNameForRow(game.away_team)}
                         </div>
-                        <div className="flex space-x-1.5 items-center flex-1">
+                        <div className="flex space-x-1.5 items-center flex-1 min-w-0">
                           {/* Spread */}
                           {spreadMarket && (
                             <button
@@ -728,11 +745,11 @@ export default function SportsbookPage() {
                       </div>
 
                       {/* Home Team Row */}
-                      <div className="flex items-center mb-1">
-                        <div className="text-white font-medium text-sm w-20 flex-shrink-0">
-                          {formatTeamName(game.home_team).split(' ').slice(1).join(' ')}
+                      <div className="flex items-center mb-1 gap-2">
+                        <div className="text-white font-medium text-sm w-24 flex-shrink-0 truncate">
+                          {getTeamNameForRow(game.home_team)}
                         </div>
-                        <div className="flex space-x-1.5 items-center flex-1">
+                        <div className="flex space-x-1.5 items-center flex-1 min-w-0">
                           {/* Spread */}
                           {spreadMarket && (
                             <button
