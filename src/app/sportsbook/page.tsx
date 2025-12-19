@@ -385,36 +385,131 @@ export default function SportsbookPage() {
     if (sport.includes('nba') || sport.includes('nfl') || sport.includes('nhl') || sport.includes('icehockey') || sport.includes('americanfootball_nfl') || sport.includes('basketball_nba') || sport.includes('icehockey_nhl')) {
       const parts = formatted.split(' ')
       
-      // If already has abbreviation, return as is
+      // City to abbreviation mapping (no duplicates)
+      const cityToAbbrev: Record<string, string> = {
+        // NHL
+        'Carolina': 'CAR',
+        'Florida': 'FLA',
+        'Winnipeg': 'WPG',
+        'New Jersey': 'NJ',
+        'New York': 'NY',
+        'Tampa Bay': 'TB',
+        'San Jose': 'SJ',
+        'Los Angeles': 'LA',
+        'Vegas': 'VGK',
+        'St. Louis': 'STL',
+        'Minnesota': 'MIN',
+        'Nashville': 'NSH',
+        'Columbus': 'CBJ',
+        'Arizona': 'ARI',
+        'Calgary': 'CGY',
+        'Edmonton': 'EDM',
+        'Vancouver': 'VAN',
+        'Ottawa': 'OTT',
+        'Montreal': 'MTL',
+        'Toronto': 'TOR',
+        'Buffalo': 'BUF',
+        'Boston': 'BOS',
+        'Detroit': 'DET',
+        'Pittsburgh': 'PIT',
+        'Philadelphia': 'PHI',
+        'Washington': 'WAS',
+        'New York Rangers': 'NYR',
+        'New York Islanders': 'NYI',
+        'Los Angeles Kings': 'LAK',
+        // NBA
+        'Miami': 'MIA',
+        'Atlanta': 'ATL',
+        'Chicago': 'CHI',
+        'Dallas': 'DAL',
+        'Denver': 'DEN',
+        'Houston': 'HOU',
+        'Indiana': 'IND',
+        'Memphis': 'MEM',
+        'Milwaukee': 'MIL',
+        'Oklahoma City': 'OKC',
+        'Orlando': 'ORL',
+        'Phoenix': 'PHX',
+        'Portland': 'POR',
+        'Sacramento': 'SAC',
+        'San Antonio': 'SA',
+        'Utah': 'UTA',
+        'Golden State': 'GSW',
+        'Los Angeles Lakers': 'LAL',
+        'Los Angeles Clippers': 'LAC',
+        'New York Knicks': 'NYK',
+        // NFL
+        'Green Bay': 'GB',
+        'Kansas City': 'KC',
+        'Las Vegas': 'LV',
+        'New Orleans': 'NO',
+        'San Francisco': 'SF',
+        'New York Giants': 'NYG',
+        'New York Jets': 'NYJ',
+        'Los Angeles Chargers': 'LAC',
+        'Los Angeles Rams': 'LAR',
+      }
+      
+      // If already has abbreviation, extract team name
       if (parts.length > 1 && parts[0].length <= 3 && parts[0] === parts[0].toUpperCase()) {
-        // Extract team name part
+        const abbrev = parts[0]
         const teamPart = parts.slice(1).join(' ')
         
-        // For NBA/NFL, we want: "ABBREV TeamName"
         // Extract just the team name (last word usually)
         if (teamPart.includes('(')) {
-          // Keep names with parentheses
-          return `${parts[0]} ${teamPart}`
+          return `${abbrev} ${teamPart}`
         } else {
           const teamWords = teamPart.split(' ')
           if (teamWords.length > 1) {
             const lastWord = teamWords[teamWords.length - 1]
-            // For number-based names like "76ers", keep full team part
             if (/\d/.test(lastWord)) {
-              return `${parts[0]} ${teamPart}`
+              return `${abbrev} ${teamPart}`
             }
-            return `${parts[0]} ${lastWord}`
+            return `${abbrev} ${lastWord}`
           }
-          return `${parts[0]} ${teamPart}`
+          return `${abbrev} ${teamPart}`
         }
       }
       
-      // If no abbreviation, try to add one based on city
-      // This is a fallback - ideally formatTeamName should already provide the abbreviation
+      // If no abbreviation, try to find city and convert to abbreviation
+      // Check if first word(s) match a city
+      for (let i = 1; i <= Math.min(parts.length, 3); i++) {
+        const cityPart = parts.slice(0, i).join(' ')
+        if (cityToAbbrev[cityPart]) {
+          const abbrev = cityToAbbrev[cityPart]
+          const teamPart = parts.slice(i).join(' ')
+          const teamWords = teamPart.split(' ')
+          if (teamWords.length > 1) {
+            const lastWord = teamWords[teamWords.length - 1]
+            if (/\d/.test(lastWord)) {
+              return `${abbrev} ${teamPart}`
+            }
+            return `${abbrev} ${lastWord}`
+          }
+          return `${abbrev} ${teamPart}`
+        }
+      }
+      
+      // Fallback: try to extract abbreviation from original name
+      const originalParts = fullTeamName.split(' ')
+      if (originalParts.length > 1 && originalParts[0].length <= 3 && originalParts[0] === originalParts[0].toUpperCase()) {
+        const abbrev = originalParts[0]
+        const teamPart = originalParts.slice(1).join(' ')
+        const teamWords = teamPart.split(' ')
+        if (teamWords.length > 1) {
+          const lastWord = teamWords[teamWords.length - 1]
+          if (/\d/.test(lastWord)) {
+            return `${abbrev} ${teamPart}`
+          }
+          return `${abbrev} ${lastWord}`
+        }
+        return `${abbrev} ${teamPart}`
+      }
+      
       return formatted
     }
     
-    // MLB, NHL, and others: Use abbreviation + team name format
+    // MLB and others: Use abbreviation + team name format
     const parts = formatted.split(' ')
     if (parts.length > 1 && parts[0].length <= 3 && parts[0] === parts[0].toUpperCase()) {
       const teamPart = parts.slice(1).join(' ')
