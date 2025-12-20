@@ -367,6 +367,7 @@ export default function SportsbookPage() {
   }
 
   const getTeamNameForRow = (fullTeamName: string, sportKey: string) => {
+    if (!fullTeamName) return fullTeamName || ''
     // Format the team name first
     const formatted = formatTeamName(fullTeamName)
     const sport = sportKey?.toLowerCase() || ''
@@ -459,7 +460,6 @@ export default function SportsbookPage() {
         'Denver': 'DEN',
         'Houston': 'HOU',
         'Indiana': 'IND',
-        'Cleveland': 'CLE',
         'Memphis': 'MEM',
         'Milwaukee': 'MIL',
         'Oklahoma City': 'OKC',
@@ -483,6 +483,11 @@ export default function SportsbookPage() {
         'New York Jets': 'NYJ',
         'Los Angeles Chargers': 'LAC',
         'Los Angeles Rams': 'LAR',
+        'Jacksonville': 'JAX',
+        'Houston': 'HOU',
+        'Cleveland': 'CLE',
+        'Minnesota': 'MIN',
+        'Arizona': 'ARI',
       }
       
       // If already has abbreviation, extract team name
@@ -596,7 +601,32 @@ export default function SportsbookPage() {
             return `${abbrev} ${lastWord}`
           }
         }
-        return abbrev // Fallback
+        // Final fallback: if we still only have abbreviation, try harder to get team name from original
+        const fallbackParts = fullTeamName.split(' ')
+        if (fallbackParts.length > 1) {
+          let startIdx = 0
+          if (fallbackParts[0].length <= 3 && fallbackParts[0] === fallbackParts[0].toUpperCase()) {
+            startIdx = 1
+          }
+          const teamName = fallbackParts.slice(startIdx).join(' ')
+          if (teamName && teamName.trim()) {
+            // Remove (FL) for NBA/NFL/NHL
+            let cleanTeam = teamName
+            if ((sport.includes('nba') || sport.includes('nfl') || sport.includes('nhl')) && teamName.includes('(FL)')) {
+              cleanTeam = teamName.replace(/\s*\(FL\)\s*/gi, '').trim()
+            }
+            const teamWords = cleanTeam.split(' ')
+            if (teamWords.length > 0) {
+              const lastWord = teamWords[teamWords.length - 1]
+              // Check teamNameMap for special cases
+              if (teamNameMap[lastWord]) {
+                return `${abbrev} ${teamNameMap[lastWord]}`
+              }
+              return `${abbrev} ${lastWord}`
+            }
+          }
+        }
+        return abbrev // Final fallback - just abbreviation
       }
       
       // If no abbreviation, try to find city and convert to abbreviation
@@ -769,6 +799,10 @@ export default function SportsbookPage() {
         'LAC': 'Los Angeles',
         'LAR': 'Los Angeles',
         'JAX': 'Jacksonville',
+        'HOU': 'Houston',
+        'CLE': 'Cleveland',
+        'MIN': 'Minnesota',
+        'ARI': 'Arizona',
       }
       
       // Reverse team name mappings (for header, show full names)
@@ -1132,7 +1166,7 @@ export default function SportsbookPage() {
 
                       {/* Away Team Row */}
                       <div className="flex items-center mb-2 gap-2">
-                        <div className="text-white font-medium text-sm w-24 flex-shrink-0 truncate">
+                        <div className="text-white font-medium text-sm w-32 flex-shrink-0">
                           {getTeamNameForRow(game.away_team, game.sport_key)}
                         </div>
                         <div className="flex space-x-1.5 items-center flex-1 min-w-0">
@@ -1195,7 +1229,7 @@ export default function SportsbookPage() {
 
                       {/* Home Team Row */}
                       <div className="flex items-center mb-1 gap-2">
-                        <div className="text-white font-medium text-sm w-24 flex-shrink-0 truncate">
+                        <div className="text-white font-medium text-sm w-32 flex-shrink-0">
                           {getTeamNameForRow(game.home_team, game.sport_key)}
                         </div>
                         <div className="flex space-x-1.5 items-center flex-1 min-w-0">
