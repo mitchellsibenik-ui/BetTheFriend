@@ -368,12 +368,11 @@ export default function SportsbookPage() {
 
   const getTeamNameForRow = (fullTeamName: string, sportKey: string) => {
     if (!fullTeamName) return fullTeamName || ''
-    // Format the team name first
-    const formatted = formatTeamName(fullTeamName)
     const sport = sportKey?.toLowerCase() || ''
     
     // NCAAF: Full name without abbreviation (e.g., "Alabama", "Oklahoma", "Miami (FL)", "Texas A&M")
     if (sport.includes('ncaaf') || sport.includes('college')) {
+      const formatted = formatTeamName(fullTeamName)
       const parts = formatted.split(' ')
       // Remove city abbreviation if present
       if (parts.length > 1 && parts[0].length === 3 && parts[0] === parts[0].toUpperCase()) {
@@ -384,7 +383,8 @@ export default function SportsbookPage() {
     
     // NBA, NFL & NHL: Abbreviation + Team name (e.g., "MIA Heat", "BOS Celtics", "PHI 76ers", "PHI Eagles", "BUF Bills", "CAR Hurricanes", "FLA Panthers", "WPG Jets", "NJ Devils")
     if (sport.includes('nba') || sport.includes('nfl') || sport.includes('nhl') || sport.includes('icehockey') || sport.includes('americanfootball_nfl') || sport.includes('basketball_nba') || sport.includes('icehockey_nhl')) {
-      const parts = formatted.split(' ')
+      // Work directly with original fullTeamName first
+      const originalParts = fullTeamName.split(' ')
       
       // Team name mappings for special cases
       const teamNameMap: Record<string, string> = {
@@ -490,210 +490,61 @@ export default function SportsbookPage() {
         'Arizona': 'ARI',
       }
       
-      // If already has abbreviation, extract team name
-      if (parts.length > 1 && parts[0].length <= 3 && parts[0] === parts[0].toUpperCase()) {
-        const abbrev = parts[0]
-        const teamPart = parts.slice(1).join(' ')
-        
-        // For NBA, skip if it's "MIA (FL)" - that's for college
-        if (sport.includes('nba') && teamPart.includes('(FL)')) {
-          // This is a college team, should not be here, but handle it
-          return formatted
-        }
-        
-        // If teamPart is empty or missing, get it from original name
-        if (!teamPart || teamPart.trim() === '') {
-          const originalParts = fullTeamName.split(' ')
-          if (originalParts.length > 1) {
-            // Skip abbreviation if present
-            let startIdx = 0
-            if (originalParts[0].length <= 3 && originalParts[0] === originalParts[0].toUpperCase()) {
-              startIdx = 1
-            }
-            const extractedTeam = originalParts.slice(startIdx).join(' ')
-            const teamWords = extractedTeam.split(' ')
-            if (teamWords.length > 0) {
-              const lastWord = teamWords[teamWords.length - 1]
-              if (teamNameMap[lastWord]) {
-                return `${abbrev} ${teamNameMap[lastWord]}`
-              }
-              if (/\d/.test(lastWord)) {
-                return `${abbrev} ${extractedTeam}`
-              }
-              return `${abbrev} ${lastWord}`
-            }
-          }
-          return abbrev // Fallback to just abbreviation if we can't find team name
-        }
-        
-        // Extract just the team name (last word usually)
-        // For NBA/NFL/NHL, skip "(FL)" - that's only for college
-        if (teamPart.includes('(FL)') && (sport.includes('nba') || sport.includes('nfl') || sport.includes('nhl'))) {
-          // Get team name from original instead
-          const originalParts = fullTeamName.split(' ')
-          if (originalParts.length > 1) {
-            let startIdx = 0
-            if (originalParts[0].length <= 3 && originalParts[0] === originalParts[0].toUpperCase()) {
-              startIdx = 1
-            }
-            const extractedTeam = originalParts.slice(startIdx).join(' ')
-            // Remove "(FL)" if present
-            const cleanTeam = extractedTeam.replace(/\s*\(FL\)\s*/gi, '').trim()
-            const teamWords = cleanTeam.split(' ')
-            if (teamWords.length > 0) {
-              const lastWord = teamWords[teamWords.length - 1]
-              if (teamNameMap[lastWord]) {
-                return `${abbrev} ${teamNameMap[lastWord]}`
-              }
-              return `${abbrev} ${lastWord}`
-            }
-          }
-        }
-        if (teamPart.includes('(')) {
-          // Keep names with parentheses for college teams only
-          return `${abbrev} ${teamPart}`
-        } else {
-          const teamWords = teamPart.split(' ')
-          if (teamWords.length > 1) {
-            const lastWord = teamWords[teamWords.length - 1]
-            // Use special mapping if available
-            if (teamNameMap[lastWord]) {
-              return `${abbrev} ${teamNameMap[lastWord]}`
-            }
-            // For number-based names like "76ers", keep full team part
-            if (/\d/.test(lastWord)) {
-              return `${abbrev} ${teamPart}`
-            }
-            return `${abbrev} ${lastWord}`
-          }
-          // Use special mapping if available
-          if (teamNameMap[teamPart]) {
-            return `${abbrev} ${teamNameMap[teamPart]}`
-          }
-          return `${abbrev} ${teamPart}`
-        }
-      }
-      
-      // If formatted is just an abbreviation (e.g., "FLA", "COL"), get team name from original
-      if (parts.length === 1 && parts[0].length <= 3 && parts[0] === parts[0].toUpperCase()) {
-        const abbrev = parts[0]
-        const originalParts = fullTeamName.split(' ')
-        if (originalParts.length > 1) {
-          // Skip abbreviation if present
-          let startIdx = 0
-          if (originalParts[0].length <= 3 && originalParts[0] === originalParts[0].toUpperCase()) {
-            startIdx = 1
-          }
-          let extractedTeam = originalParts.slice(startIdx).join(' ')
-          // For NBA/NFL/NHL, remove "(FL)" - that's only for college
-          if ((sport.includes('nba') || sport.includes('nfl') || sport.includes('nhl')) && extractedTeam.includes('(FL)')) {
-            extractedTeam = extractedTeam.replace(/\s*\(FL\)\s*/gi, '').trim()
-          }
-          const teamWords = extractedTeam.split(' ')
-          if (teamWords.length > 0) {
-            const lastWord = teamWords[teamWords.length - 1]
-            if (teamNameMap[lastWord]) {
-              return `${abbrev} ${teamNameMap[lastWord]}`
-            }
-            if (/\d/.test(lastWord)) {
-              return `${abbrev} ${extractedTeam}`
-            }
-            return `${abbrev} ${lastWord}`
-          }
-        }
-        // Final fallback: if we still only have abbreviation, try harder to get team name from original
-        const fallbackParts = fullTeamName.split(' ')
-        if (fallbackParts.length > 1) {
-          let startIdx = 0
-          if (fallbackParts[0].length <= 3 && fallbackParts[0] === fallbackParts[0].toUpperCase()) {
-            startIdx = 1
-          }
-          const teamName = fallbackParts.slice(startIdx).join(' ')
-          if (teamName && teamName.trim()) {
-            // Remove (FL) for NBA/NFL/NHL
-            let cleanTeam = teamName
-            if ((sport.includes('nba') || sport.includes('nfl') || sport.includes('nhl')) && teamName.includes('(FL)')) {
-              cleanTeam = teamName.replace(/\s*\(FL\)\s*/gi, '').trim()
-            }
-            const teamWords = cleanTeam.split(' ')
-            if (teamWords.length > 0) {
-              const lastWord = teamWords[teamWords.length - 1]
-              // Check teamNameMap for special cases
-              if (teamNameMap[lastWord]) {
-                return `${abbrev} ${teamNameMap[lastWord]}`
-              }
-              return `${abbrev} ${lastWord}`
-            }
-          }
-        }
-        return abbrev // Final fallback - just abbreviation
-      }
-      
-      // If no abbreviation, try to find city and convert to abbreviation
-      // Check if first word(s) match a city
-      for (let i = 1; i <= Math.min(parts.length, 3); i++) {
-        const cityPart = parts.slice(0, i).join(' ')
-        if (cityToAbbrev[cityPart]) {
-          const abbrev = cityToAbbrev[cityPart]
-          const teamPart = parts.slice(i).join(' ')
-          
-          // For NBA, skip if it's "(FL)" - that's for college
-          if (sport.includes('nba') && teamPart.includes('(FL)')) {
-            continue
-          }
-          
-          const teamWords = teamPart.split(' ')
-          if (teamWords.length > 1) {
-            const lastWord = teamWords[teamWords.length - 1]
-            // Use special mapping if available
-            if (teamNameMap[lastWord]) {
-              return `${abbrev} ${teamNameMap[lastWord]}`
-            }
-            if (/\d/.test(lastWord)) {
-              return `${abbrev} ${teamPart}`
-            }
-            return `${abbrev} ${lastWord}`
-          }
-          // Use special mapping if available
-          if (teamNameMap[teamPart]) {
-            return `${abbrev} ${teamNameMap[teamPart]}`
-          }
-          return `${abbrev} ${teamPart}`
-        }
-      }
-      
-      // Fallback: try to extract abbreviation from original name
-      const originalParts = fullTeamName.split(' ')
+      // Extract directly from original fullTeamName - don't rely on formatted
+      // Case 1: Already has abbreviation (e.g., "FLA Panthers", "CAR Hurricanes")
       if (originalParts.length > 1 && originalParts[0].length <= 3 && originalParts[0] === originalParts[0].toUpperCase()) {
         const abbrev = originalParts[0]
-        const teamPart = originalParts.slice(1).join(' ')
+        let teamPart = originalParts.slice(1).join(' ')
         
-        // For NBA/NFL/NHL, remove "(FL)" - that's only for college
-        let cleanTeamPart = teamPart
+        // Remove "(FL)" for NBA/NFL/NHL - that's only for college
         if ((sport.includes('nba') || sport.includes('nfl') || sport.includes('nhl')) && teamPart.includes('(FL)')) {
-          cleanTeamPart = teamPart.replace(/\s*\(FL\)\s*/gi, '').trim()
+          teamPart = teamPart.replace(/\s*\(FL\)\s*/gi, '').trim()
         }
         
-        const teamWords = cleanTeamPart.split(' ')
-        if (teamWords.length > 1) {
+        if (teamPart && teamPart.trim()) {
+          const teamWords = teamPart.split(' ')
           const lastWord = teamWords[teamWords.length - 1]
           // Use special mapping if available
           if (teamNameMap[lastWord]) {
             return `${abbrev} ${teamNameMap[lastWord]}`
           }
+          // For number-based names like "76ers", keep full team part
           if (/\d/.test(lastWord)) {
-            return `${abbrev} ${cleanTeamPart}`
+            return `${abbrev} ${teamPart}`
           }
           return `${abbrev} ${lastWord}`
         }
-        // Use special mapping if available
-        if (teamNameMap[cleanTeamPart]) {
-          return `${abbrev} ${teamNameMap[cleanTeamPart]}`
-        }
-        return `${abbrev} ${cleanTeamPart}`
       }
       
-      return formatted
+      // Case 2: Has city name, convert to abbreviation (e.g., "Florida Panthers", "Carolina Hurricanes")
+      for (let i = 1; i <= Math.min(originalParts.length, 3); i++) {
+        const cityPart = originalParts.slice(0, i).join(' ')
+        if (cityToAbbrev[cityPart]) {
+          const abbrev = cityToAbbrev[cityPart]
+          let teamPart = originalParts.slice(i).join(' ')
+          
+          // Remove "(FL)" for NBA/NFL/NHL
+          if ((sport.includes('nba') || sport.includes('nfl') || sport.includes('nhl')) && teamPart.includes('(FL)')) {
+            teamPart = teamPart.replace(/\s*\(FL\)\s*/gi, '').trim()
+          }
+          
+          if (teamPart && teamPart.trim()) {
+            const teamWords = teamPart.split(' ')
+            const lastWord = teamWords[teamWords.length - 1]
+            // Use special mapping if available
+            if (teamNameMap[lastWord]) {
+              return `${abbrev} ${teamNameMap[lastWord]}`
+            }
+            if (/\d/.test(lastWord)) {
+              return `${abbrev} ${teamPart}`
+            }
+            return `${abbrev} ${lastWord}`
+          }
+        }
+      }
+      
+      // Fallback: return formatted name
+      return formatTeamName(fullTeamName)
     }
     
     // MLB and others: Use abbreviation + team name format
