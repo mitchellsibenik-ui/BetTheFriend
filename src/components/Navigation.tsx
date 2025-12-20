@@ -155,6 +155,12 @@ export default function Navigation() {
             <Link href="/social" className="text-gray-400 hover:text-white text-xs">
               FRIENDS
             </Link>
+            <button
+              onClick={() => signOut({ callbackUrl: '/' })}
+              className="text-gray-400 hover:text-white text-xs"
+            >
+              LOGOUT
+            </button>
           </div>
         </div>
       </div>
