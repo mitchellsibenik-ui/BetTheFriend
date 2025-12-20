@@ -393,6 +393,11 @@ export default function SportsbookPage() {
         'Ducks': 'Ducks',
         'Capitals': 'Capitals',
         'Penguins': 'Penguins',
+        'Hurricanes': 'Hurricanes',
+        'Panthers': 'Panthers',
+        'Jets': 'Jets',
+        'Wild': 'Wild',
+        'Mammoth': 'Mammoth',
         // NBA special cases
         'Cavaliers': 'Cavaliers',
         '76ers': '76ers',
@@ -406,6 +411,7 @@ export default function SportsbookPage() {
         'Cardinals': 'Cardinals',
         'Jaguars': 'Jaguars',
         'Texans': 'Texans',
+        'Eagles': 'Eagles',
       }
       
       // City to abbreviation mapping (no duplicates)
@@ -490,9 +496,56 @@ export default function SportsbookPage() {
           return formatted
         }
         
+        // If teamPart is empty or missing, get it from original name
+        if (!teamPart || teamPart.trim() === '') {
+          const originalParts = fullTeamName.split(' ')
+          if (originalParts.length > 1) {
+            // Skip abbreviation if present
+            let startIdx = 0
+            if (originalParts[0].length <= 3 && originalParts[0] === originalParts[0].toUpperCase()) {
+              startIdx = 1
+            }
+            const extractedTeam = originalParts.slice(startIdx).join(' ')
+            const teamWords = extractedTeam.split(' ')
+            if (teamWords.length > 0) {
+              const lastWord = teamWords[teamWords.length - 1]
+              if (teamNameMap[lastWord]) {
+                return `${abbrev} ${teamNameMap[lastWord]}`
+              }
+              if (/\d/.test(lastWord)) {
+                return `${abbrev} ${extractedTeam}`
+              }
+              return `${abbrev} ${lastWord}`
+            }
+          }
+          return abbrev // Fallback to just abbreviation if we can't find team name
+        }
+        
         // Extract just the team name (last word usually)
+        // For NBA/NFL/NHL, skip "(FL)" - that's only for college
+        if (teamPart.includes('(FL)') && (sport.includes('nba') || sport.includes('nfl') || sport.includes('nhl'))) {
+          // Get team name from original instead
+          const originalParts = fullTeamName.split(' ')
+          if (originalParts.length > 1) {
+            let startIdx = 0
+            if (originalParts[0].length <= 3 && originalParts[0] === originalParts[0].toUpperCase()) {
+              startIdx = 1
+            }
+            const extractedTeam = originalParts.slice(startIdx).join(' ')
+            // Remove "(FL)" if present
+            const cleanTeam = extractedTeam.replace(/\s*\(FL\)\s*/gi, '').trim()
+            const teamWords = cleanTeam.split(' ')
+            if (teamWords.length > 0) {
+              const lastWord = teamWords[teamWords.length - 1]
+              if (teamNameMap[lastWord]) {
+                return `${abbrev} ${teamNameMap[lastWord]}`
+              }
+              return `${abbrev} ${lastWord}`
+            }
+          }
+        }
         if (teamPart.includes('(')) {
-          // Keep names with parentheses for college teams
+          // Keep names with parentheses for college teams only
           return `${abbrev} ${teamPart}`
         } else {
           const teamWords = teamPart.split(' ')
@@ -514,6 +567,36 @@ export default function SportsbookPage() {
           }
           return `${abbrev} ${teamPart}`
         }
+      }
+      
+      // If formatted is just an abbreviation (e.g., "FLA", "COL"), get team name from original
+      if (parts.length === 1 && parts[0].length <= 3 && parts[0] === parts[0].toUpperCase()) {
+        const abbrev = parts[0]
+        const originalParts = fullTeamName.split(' ')
+        if (originalParts.length > 1) {
+          // Skip abbreviation if present
+          let startIdx = 0
+          if (originalParts[0].length <= 3 && originalParts[0] === originalParts[0].toUpperCase()) {
+            startIdx = 1
+          }
+          let extractedTeam = originalParts.slice(startIdx).join(' ')
+          // For NBA/NFL/NHL, remove "(FL)" - that's only for college
+          if ((sport.includes('nba') || sport.includes('nfl') || sport.includes('nhl')) && extractedTeam.includes('(FL)')) {
+            extractedTeam = extractedTeam.replace(/\s*\(FL\)\s*/gi, '').trim()
+          }
+          const teamWords = extractedTeam.split(' ')
+          if (teamWords.length > 0) {
+            const lastWord = teamWords[teamWords.length - 1]
+            if (teamNameMap[lastWord]) {
+              return `${abbrev} ${teamNameMap[lastWord]}`
+            }
+            if (/\d/.test(lastWord)) {
+              return `${abbrev} ${extractedTeam}`
+            }
+            return `${abbrev} ${lastWord}`
+          }
+        }
+        return abbrev // Fallback
       }
       
       // If no abbreviation, try to find city and convert to abbreviation
@@ -555,12 +638,13 @@ export default function SportsbookPage() {
         const abbrev = originalParts[0]
         const teamPart = originalParts.slice(1).join(' ')
         
-        // For NBA, skip if it's "(FL)" - that's for college
-        if (sport.includes('nba') && teamPart.includes('(FL)')) {
-          return formatted
+        // For NBA/NFL/NHL, remove "(FL)" - that's only for college
+        let cleanTeamPart = teamPart
+        if ((sport.includes('nba') || sport.includes('nfl') || sport.includes('nhl')) && teamPart.includes('(FL)')) {
+          cleanTeamPart = teamPart.replace(/\s*\(FL\)\s*/gi, '').trim()
         }
         
-        const teamWords = teamPart.split(' ')
+        const teamWords = cleanTeamPart.split(' ')
         if (teamWords.length > 1) {
           const lastWord = teamWords[teamWords.length - 1]
           // Use special mapping if available
@@ -568,15 +652,15 @@ export default function SportsbookPage() {
             return `${abbrev} ${teamNameMap[lastWord]}`
           }
           if (/\d/.test(lastWord)) {
-            return `${abbrev} ${teamPart}`
+            return `${abbrev} ${cleanTeamPart}`
           }
           return `${abbrev} ${lastWord}`
         }
         // Use special mapping if available
-        if (teamNameMap[teamPart]) {
-          return `${abbrev} ${teamNameMap[teamPart]}`
+        if (teamNameMap[cleanTeamPart]) {
+          return `${abbrev} ${teamNameMap[cleanTeamPart]}`
         }
-        return `${abbrev} ${teamPart}`
+        return `${abbrev} ${cleanTeamPart}`
       }
       
       return formatted
