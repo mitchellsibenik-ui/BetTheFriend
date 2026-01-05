@@ -24,7 +24,10 @@ export async function POST(
 
     // Find the bet and verify the user is the receiver
     const bet = await prisma.bet.findUnique({
-      where: { id: betId }
+      where: { id: betId },
+      include: {
+        game: true
+      }
     })
 
     if (!bet) {
@@ -37,6 +40,41 @@ export async function POST(
 
     if (bet.status !== 'PENDING') {
       return NextResponse.json({ error: 'Bet is no longer pending' }, { status: 400 })
+    }
+
+    // Check if game has started before allowing acceptance
+    if (action === 'accept') {
+      const now = new Date()
+      let gameStartTime: Date | null = null
+
+      // Try to get start time from game record first
+      if (bet.game?.startTime) {
+        gameStartTime = new Date(bet.game.startTime)
+      } else if (bet.gameDetails) {
+        // Fallback to gameDetails if game record doesn't have startTime
+        try {
+          const gameDetails = JSON.parse(bet.gameDetails)
+          if (gameDetails.commence_time) {
+            gameStartTime = new Date(gameDetails.commence_time)
+          }
+        } catch (e) {
+          console.error('Error parsing gameDetails:', e)
+        }
+      }
+
+      // Only block non-live bets on started games
+      if (gameStartTime && gameStartTime < now && !bet.isLiveBet) {
+        const gameStartTimeStr = gameStartTime.toLocaleString('en-US', {
+          dateStyle: 'medium',
+          timeStyle: 'short'
+        })
+        return NextResponse.json(
+          { 
+            error: `Cannot accept bet on a game that has already started. Game started at ${gameStartTimeStr}.` 
+          },
+          { status: 400 }
+        )
+      }
     }
 
     // Handle bet acceptance/decline with balance updates

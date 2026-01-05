@@ -155,6 +155,55 @@ export async function POST(request: Request) {
       )
     }
 
+    // Validate that games exist for the selected date and sport
+    try {
+      const { oddsApi } = await import('@/lib/api/odds')
+      
+      // Map the sport key to the format expected by oddsApi
+      const sportMap: { [key: string]: string } = {
+        'baseball_mlb': 'mlb',
+        'americanfootball_nfl': 'nfl',
+        'americanfootball_ncaaf': 'ncaaf',
+        'basketball_nba': 'nba',
+        'icehockey_nhl': 'nhl'
+      }
+
+      const mappedSport = sportMap[sport] || 'mlb'
+      const games = await oddsApi.getOdds(mappedSport)
+      
+      if (!games || !Array.isArray(games)) {
+        return NextResponse.json(
+          { error: 'Failed to fetch games data. Please try again later.' },
+          { status: 500 }
+        )
+      }
+
+      // Filter games for the specific date
+      const dateFilteredGames = games.filter(game => {
+        if (!game.commence_time) return false
+        const gameDateStr = game.commence_time.split('T')[0]
+        return gameDateStr === gameDate
+      })
+
+      if (dateFilteredGames.length === 0) {
+        // Get available dates to help user
+        const uniqueDates = new Set(games.map(g => g.commence_time?.split('T')[0]).filter(Boolean))
+        const availableDates = Array.from(uniqueDates).sort().slice(0, 5) // Show next 5 available dates
+        
+        return NextResponse.json(
+          { 
+            error: `No games found for ${sportTitle} on ${gameDate}. Please try selecting a different date.`,
+            availableDates: availableDates.length > 0 ? availableDates : null
+          },
+          { status: 400 }
+        )
+      }
+    } catch (error) {
+      console.error('Error validating games:', error)
+      // Don't block room creation if validation fails - let it proceed
+      // The user will see the error when they try to view the room
+    }
+
     // Create room and add creator as first participant
     const room = await prisma.$transaction(async (tx) => {
       // Deduct entry fee from creator

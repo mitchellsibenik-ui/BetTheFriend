@@ -69,7 +69,14 @@ export default function CreateRoomPage() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to create room')
+        let errorMessage = errorData.error || 'Failed to create room'
+        
+        // If there are available dates, append them to the error message
+        if (errorData.availableDates && errorData.availableDates.length > 0) {
+          errorMessage += `\n\nAvailable dates: ${errorData.availableDates.join(', ')}`
+        }
+        
+        throw new Error(errorMessage)
       }
 
       const data = await response.json()

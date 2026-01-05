@@ -377,6 +377,7 @@ export async function settleCompletedBets() {
     console.log('🔍 [BET SETTLEMENT] Checking for completed bets to settle...')
     
     // Get all active bets (check both ACTIVE and ACCEPTED statuses for compatibility)
+    // Also include any bets that might have been missed in previous runs
     const activeBets = await prisma.bet.findMany({
       where: { 
         OR: [
@@ -387,7 +388,8 @@ export async function settleCompletedBets() {
       },
       include: {
         sender: true,
-        receiver: true
+        receiver: true,
+        game: true
       }
     })
     
@@ -424,6 +426,11 @@ export async function settleCompletedBets() {
     
     console.log(`[BET SETTLEMENT] Processing ${Object.keys(gameGroups).length} unique game(s)`)
     
+    // Track settlement statistics
+    let betsSettled = 0
+    let betsSkipped = 0
+    let gamesWithResults = 0
+    
     // Process each game
     for (const [gameKey, gameData] of Object.entries(gameGroups)) {
       try {
@@ -451,10 +458,14 @@ export async function settleCompletedBets() {
         // If API doesn't have results yet, check database as fallback (but log warning)
         if (!gameResult || !gameResult.completed) {
           try {
-            const gameRecord = await prisma.game.findUnique({
-              where: { id: gameData.gameId },
-              select: { homeScore: true, awayScore: true, status: true }
-            })
+            // Check if we have game record from the include, or fetch it
+            let gameRecord = firstBet.game
+            if (!gameRecord) {
+              gameRecord = await prisma.game.findUnique({
+                where: { id: gameData.gameId },
+                select: { homeScore: true, awayScore: true, status: true, endTime: true, startTime: true }
+              })
+            }
             
             if (gameRecord && gameRecord.status === 'completed' && 
                 gameRecord.homeScore !== null && gameRecord.awayScore !== null) {
@@ -463,6 +474,19 @@ export async function settleCompletedBets() {
               awayScore = gameRecord.awayScore
               console.log(`   ⚠️  Using database scores (API unavailable): ${gameData.homeTeam} ${homeScore} - ${gameData.awayTeam} ${awayScore}`)
               console.log(`   ⚠️  WARNING: Not using real-time API results - scores may be outdated`)
+            } else if (gameRecord && gameRecord.endTime) {
+              // Game has ended but no scores - this shouldn't happen, but log it
+              const hoursSinceEnd = Math.floor((now.getTime() - new Date(gameRecord.endTime).getTime()) / (1000 * 60 * 60))
+              if (hoursSinceEnd > 0) {
+                console.log(`   ⚠️  Game ended ${hoursSinceEnd} hours ago but no scores available in database`)
+              }
+            } else if (gameRecord && gameRecord.startTime) {
+              // Check if game should have finished by now (more than 4 hours after start)
+              const gameStart = new Date(gameRecord.startTime)
+              const hoursSinceStart = Math.floor((now.getTime() - gameStart.getTime()) / (1000 * 60 * 60))
+              if (hoursSinceStart >= 4 && gameRecord.status !== 'completed') {
+                console.log(`   ⚠️  Game started ${hoursSinceStart} hours ago but status is still "${gameRecord.status}" - may need manual review`)
+              }
             }
           } catch (error) {
             console.log(`   ⚠️  Could not check Game table: ${error}`)
@@ -553,10 +577,12 @@ export async function settleCompletedBets() {
         // At this point, we should have valid scores (preferably from real-time API)
         if (homeScore === null || awayScore === null) {
           console.log(`   ❌ No valid scores available (neither real-time API nor database)`)
+          betsSkipped += gameData.bets.length
           continue
         }
         
         console.log(`   📊 Final Score (Real-Time): ${gameData.homeTeam} ${homeScore} - ${gameData.awayTeam} ${awayScore}`)
+        gamesWithResults++
         
         // Process each bet for this game
         for (const bet of gameData.bets) {
@@ -684,9 +710,13 @@ export async function settleCompletedBets() {
               console.log(`      Loser: ${loser.username}`)
             }
             
+            betsSettled++
+            console.log(`      ✅ Bet ${bet.id} successfully moved from ACTIVE to RESOLVED`)
+            
           } catch (error) {
             console.error(`   ❌ Error grading bet ${bet.id}:`, error)
             console.error(`   Error details:`, error instanceof Error ? error.message : String(error))
+            betsSkipped++
             // Continue processing other bets even if one fails
           }
         }
@@ -698,13 +728,21 @@ export async function settleCompletedBets() {
     }
     
     console.log('\n✅ [BET SETTLEMENT] Settlement process completed')
+    console.log(`📊 Summary:`)
+    console.log(`   - Games with results: ${gamesWithResults}`)
+    console.log(`   - Bets settled (moved to RESOLVED): ${betsSettled}`)
+    console.log(`   - Bets skipped (no results available): ${betsSkipped}`)
+    console.log(`   - Total active bets checked: ${activeBets.length}`)
     
     // Return summary for monitoring
     return {
       success: true,
       timestamp: new Date().toISOString(),
       gamesProcessed: Object.keys(gameGroups).length,
-      betsProcessed: activeBets.length
+      gamesWithResults: gamesWithResults,
+      betsProcessed: activeBets.length,
+      betsSettled: betsSettled,
+      betsSkipped: betsSkipped
     }
     
   } catch (error) {
