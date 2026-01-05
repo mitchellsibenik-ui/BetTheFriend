@@ -194,13 +194,13 @@ export default function BetModal({ isOpen, onClose, bet, onBetPlaced, isLiveBet 
         },
       })
       
-      // Trigger balance refresh
+      // Trigger balance refresh immediately and after a delay to ensure database is updated
       window.dispatchEvent(new Event('balanceUpdate'))
       
-      // Also trigger a small delay to ensure the balance updates
+      // Also trigger after a delay to ensure the database transaction has completed
       setTimeout(() => {
         window.dispatchEvent(new Event('balanceUpdate'))
-      }, 100)
+      }, 300)
       
       onBetPlaced()
       onClose()

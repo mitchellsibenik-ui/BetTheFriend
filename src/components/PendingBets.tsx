@@ -77,10 +77,10 @@ export default function PendingBets() {
       // Trigger balance refresh for both accept and decline
       window.dispatchEvent(new Event('balanceUpdate'))
       
-      // Also trigger a small delay to ensure the balance updates
+      // Also trigger after a delay to ensure the database transaction has completed
       setTimeout(() => {
         window.dispatchEvent(new Event('balanceUpdate'))
-      }, 100)
+      }, 300)
 
       // If the bet was accepted, trigger a refresh of active bets
       if (action === 'accept') {

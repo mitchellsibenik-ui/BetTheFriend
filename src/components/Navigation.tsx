@@ -11,13 +11,6 @@ export default function Navigation() {
   const [balance, setBalance] = useState<number>(0)
   const [balanceLoading, setBalanceLoading] = useState(true)
 
-  // Fetch user balance
-  useEffect(() => {
-    if (session?.user?.id) {
-      fetchBalance()
-    }
-  }, [session?.user?.id])
-
   const fetchBalance = async () => {
     try {
       const response = await fetch('/api/user/balance')
@@ -31,6 +24,31 @@ export default function Navigation() {
       setBalanceLoading(false)
     }
   }
+
+  // Fetch user balance
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetchBalance()
+    }
+  }, [session?.user?.id])
+
+  // Listen for balance update events
+  useEffect(() => {
+    if (!session?.user?.id) return
+
+    const handleBalanceUpdate = () => {
+      // Small delay to ensure database is updated
+      setTimeout(() => {
+        fetchBalance()
+      }, 200)
+    }
+
+    window.addEventListener('balanceUpdate', handleBalanceUpdate)
+
+    return () => {
+      window.removeEventListener('balanceUpdate', handleBalanceUpdate)
+    }
+  }, [session?.user?.id])
 
   if (status === 'loading') {
     return (
