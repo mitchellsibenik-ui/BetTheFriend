@@ -148,7 +148,10 @@ function parseValueAndOdds(value: string): { line: number; odds: number } {
 /**
  * Grade a moneyline bet using standard sportsbook rules
  * Standard logic: Winner is determined by final score (including overtime)
- * Ties result in push (stake returned to both parties)
+ * 
+ * IMPORTANT: Ties result in push - both users get their stake returned
+ * - If homeScore === awayScore: PUSH (both get money back)
+ * - No winner/loser, no win/loss record update
  */
 function gradeMoneylineBet(
   bet: any,
@@ -167,11 +170,12 @@ function gradeMoneylineBet(
   } else if (awayScore > homeScore) {
     actualWinner = awayTeam
   } else {
-    // Tie - this is a push for moneyline bets
+    // TIE - This is a PUSH for moneyline bets
+    // Both users get their stake returned (no winner, no loser)
     return {
       result: 'push',
-      payout: bet.amount, // Return stake
-      description: `Game tied ${homeScore}-${awayScore}, bet pushed`
+      payout: bet.amount, // Return stake to both users
+      description: `Game tied ${homeScore}-${awayScore}, bet pushed - both users get stake returned`
     }
   }
   
@@ -201,7 +205,11 @@ function gradeMoneylineBet(
  * Grade a spread bet using standard sportsbook rules
  * Standard logic: Apply spread to the team you bet on, compare adjusted scores
  * Example: If you bet Home -3.5 and they win by 4+, you win. If they win by 3 or less, you lose.
- * Push occurs if game lands exactly on the spread (rare with half-point spreads)
+ * 
+ * IMPORTANT: Push occurs if adjusted scores are equal
+ * - If senderAdjustedScore === receiverAdjustedScore: PUSH (both get money back)
+ * - Rare with half-point spreads (e.g., -3.5) but possible with whole numbers
+ * - No winner/loser, no win/loss record update
  */
 function gradeSpreadBet(
   bet: any,
@@ -249,11 +257,12 @@ function gradeSpreadBet(
       description: `${bet.receiverTeam} covered spread ${receiverData.line > 0 ? '+' : ''}${receiverData.line}`
     }
   } else {
-    // Exact tie after spread adjustment - push
+    // EXACT TIE after spread adjustment - PUSH
+    // Both users get their stake returned (no winner, no loser)
     return {
       result: 'push',
-      payout: bet.amount,
-      description: `Spread push: game landed exactly on the spread`
+      payout: bet.amount, // Return stake to both users
+      description: `Spread push: game landed exactly on the spread - both users get stake returned`
     }
   }
 }
@@ -261,7 +270,11 @@ function gradeSpreadBet(
 /**
  * Grade an over/under bet using standard sportsbook rules
  * Standard logic: Compare total points scored to the line
- * Over wins if total > line, Under wins if total < line, Push if total = line exactly
+ * 
+ * IMPORTANT: Push occurs if total exactly equals the line
+ * - If totalScore === line: PUSH (both get money back)
+ * - Over wins if total > line, Under wins if total < line
+ * - No winner/loser, no win/loss record update
  */
 function gradeOverUnderBet(
   bet: any,
@@ -317,11 +330,12 @@ function gradeOverUnderBet(
       }
     }
   } else {
-    // Exact match - push
+    // EXACT MATCH - PUSH (total equals line exactly)
+    // Both users get their stake returned (no winner, no loser)
     return {
       result: 'push',
-      payout: bet.amount,
-      description: `Total push: game total exactly ${totalScore}`
+      payout: bet.amount, // Return stake to both users
+      description: `Total push: game total exactly ${totalScore} (line: ${line}) - both users get stake returned`
     }
   }
 }
@@ -447,54 +461,61 @@ export async function settleCompletedBets() {
           console.log(`   ⏰ Game was scheduled for ${commenceTime?.toISOString()}, checking for results...`)
         }
         
-        // ALWAYS fetch fresh results from API for real-time accuracy
-        // The API provides the most up-to-date scores and completion status
-        console.log(`   🔄 Fetching real-time results from API for ${gameData.homeTeam} vs ${gameData.awayTeam}...`)
-        const gameResult = await fetchGameResults(gameData.sportKey, gameData.gameId, gameData.homeTeam, gameData.awayTeam)
-        
         let homeScore: number | null = null
         let awayScore: number | null = null
         
-        // If API doesn't have results yet, check database as fallback (but log warning)
-        if (!gameResult || !gameResult.completed) {
-          try {
-            // Check if we have game record from the include, or fetch it
-            let gameRecord = firstBet.game
-            if (!gameRecord) {
-              gameRecord = await prisma.game.findUnique({
-                where: { id: gameData.gameId },
-                select: { homeScore: true, awayScore: true, status: true, endTime: true, startTime: true }
-              })
-            }
+        // First, check database for completed games (especially for games from yesterday)
+        // This helps catch games that were completed but settlement didn't run
+        try {
+          let gameRecord = firstBet.game
+          if (!gameRecord) {
+            gameRecord = await prisma.game.findUnique({
+              where: { id: gameData.gameId },
+              select: { homeScore: true, awayScore: true, status: true, endTime: true, startTime: true }
+            })
+          }
+          
+          // If game is marked as completed in database with scores, use those first
+          if (gameRecord && gameRecord.status === 'completed' && 
+              gameRecord.homeScore !== null && gameRecord.awayScore !== null) {
+            homeScore = gameRecord.homeScore
+            awayScore = gameRecord.awayScore
+            console.log(`   ✅ Using database scores (game already marked completed): ${gameData.homeTeam} ${homeScore} - ${gameData.awayTeam} ${awayScore}`)
+          } else if (gameRecord && gameRecord.startTime) {
+            // Check if game should have finished by now (more than 3 hours after start for most sports)
+            const gameStart = new Date(gameRecord.startTime)
+            const hoursSinceStart = Math.floor((now.getTime() - gameStart.getTime()) / (1000 * 60 * 60))
             
-            if (gameRecord && gameRecord.status === 'completed' && 
-                gameRecord.homeScore !== null && gameRecord.awayScore !== null) {
-              // Use database scores as fallback, but log that we're not using real-time API
+            // If game has scores in database but isn't marked completed, use them anyway if game should have ended
+            // This handles cases where the score updater saved scores but didn't mark as completed
+            if (hoursSinceStart >= 3 && gameRecord.homeScore !== null && gameRecord.awayScore !== null) {
               homeScore = gameRecord.homeScore
               awayScore = gameRecord.awayScore
-              console.log(`   ⚠️  Using database scores (API unavailable): ${gameData.homeTeam} ${homeScore} - ${gameData.awayTeam} ${awayScore}`)
-              console.log(`   ⚠️  WARNING: Not using real-time API results - scores may be outdated`)
-            } else if (gameRecord && gameRecord.endTime) {
-              // Game has ended but no scores - this shouldn't happen, but log it
-              const hoursSinceEnd = Math.floor((now.getTime() - new Date(gameRecord.endTime).getTime()) / (1000 * 60 * 60))
-              if (hoursSinceEnd > 0) {
-                console.log(`   ⚠️  Game ended ${hoursSinceEnd} hours ago but no scores available in database`)
+              console.log(`   ✅ Using database scores (game should have ended ${hoursSinceStart}h ago): ${gameData.homeTeam} ${homeScore} - ${gameData.awayTeam} ${awayScore}`)
+              // Mark as completed since we're using the scores
+              try {
+                await prisma.game.update({
+                  where: { id: gameData.gameId },
+                  data: { status: 'completed', endTime: new Date() }
+                })
+              } catch (error) {
+                // Ignore update errors
               }
-            } else if (gameRecord && gameRecord.startTime) {
-              // Check if game should have finished by now (more than 4 hours after start)
-              const gameStart = new Date(gameRecord.startTime)
-              const hoursSinceStart = Math.floor((now.getTime() - gameStart.getTime()) / (1000 * 60 * 60))
-              if (hoursSinceStart >= 4 && gameRecord.status !== 'completed') {
-                console.log(`   ⚠️  Game started ${hoursSinceStart} hours ago but status is still "${gameRecord.status}" - may need manual review`)
-              }
+            } else if (hoursSinceStart >= 3 && gameRecord.status !== 'completed') {
+              console.log(`   ⚠️  Game started ${hoursSinceStart} hours ago but status is still "${gameRecord.status}" - will try API`)
             }
-          } catch (error) {
-            console.log(`   ⚠️  Could not check Game table: ${error}`)
           }
+        } catch (error) {
+          console.log(`   ⚠️  Could not check Game table: ${error}`)
         }
         
-        // Process API results if available
-        if (gameResult && gameResult.completed) {
+        // If we don't have scores from database, fetch fresh results from API
+        if (homeScore === null || awayScore === null) {
+          console.log(`   🔄 Fetching real-time results from API for ${gameData.homeTeam} vs ${gameData.awayTeam}...`)
+          const gameResult = await fetchGameResults(gameData.sportKey, gameData.gameId, gameData.homeTeam, gameData.awayTeam)
+          
+          // Process API results if available
+          if (gameResult && gameResult.completed) {
           // Extract REAL-TIME scores from API - handle different score formats
           console.log(`   ✅ Real-time API results received - processing scores...`)
           if (Array.isArray(gameResult.scores)) {
@@ -541,7 +562,8 @@ export async function settleCompletedBets() {
           
           console.log(`   ✅ Real-time final scores: ${gameData.homeTeam} ${homeScore} - ${gameData.awayTeam} ${awayScore}`)
           
-          // Update Game table with REAL-TIME scores for future reference
+          // ALWAYS save scores to database immediately - this prevents losing scores
+          // Even if settlement fails later, scores will be available for next run
           try {
             await prisma.game.update({
               where: { id: gameData.gameId },
@@ -552,26 +574,47 @@ export async function settleCompletedBets() {
                 endTime: new Date()
               }
             })
-            console.log(`   💾 Saved real-time scores to database`)
+            console.log(`   💾 Saved real-time scores to database (CRITICAL: prevents manual updates)`)
           } catch (error) {
-            // Game record might not exist, that's okay
-            console.log(`   ⚠️  Could not update Game table: ${error}`)
-          }
-        } else {
-          // No API results available
-          if (gameShouldHaveStarted) {
-            const hoursSinceStart = commenceTime ? Math.floor((now.getTime() - commenceTime.getTime()) / (1000 * 60 * 60)) : 0
-            if (hoursSinceStart >= 4) {
-              console.log(`   ⚠️  WARNING: Game started ${hoursSinceStart} hours ago but results not available. May need manual settlement.`)
-              console.log(`   📋 Game ID: ${gameData.gameId}, Teams: ${gameData.homeTeam} vs ${gameData.awayTeam}`)
-              console.log(`   📋 Affected bets: ${gameData.bets.length}`)
-            } else {
-              console.log(`   ⏳ Game started ${hoursSinceStart} hours ago, may still be in progress`)
+            // Game record might not exist, try to create it
+            try {
+              await prisma.game.create({
+                data: {
+                  id: gameData.gameId,
+                  homeTeam: gameData.homeTeam,
+                  awayTeam: gameData.awayTeam,
+                  homeScore: homeScore,
+                  awayScore: awayScore,
+                  status: 'completed',
+                  startTime: commenceTime || new Date(),
+                  endTime: new Date()
+                }
+              })
+              console.log(`   💾 Created game record with scores`)
+            } catch (createError) {
+              console.log(`   ⚠️  Could not save scores to database: ${createError}`)
+              // Continue anyway - we have scores in memory to settle bets
             }
-          } else {
-            console.log(`   ⏳ Game not completed yet or results not available`)
           }
-          continue
+          } else {
+            // No API results available - if we don't have database scores, skip
+            if (homeScore === null || awayScore === null) {
+              if (gameShouldHaveStarted) {
+                const hoursSinceStart = commenceTime ? Math.floor((now.getTime() - commenceTime.getTime()) / (1000 * 60 * 60)) : 0
+                if (hoursSinceStart >= 4) {
+                  console.log(`   ⚠️  WARNING: Game started ${hoursSinceStart} hours ago but results not available. May need manual settlement.`)
+                  console.log(`   📋 Game ID: ${gameData.gameId}, Teams: ${gameData.homeTeam} vs ${gameData.awayTeam}`)
+                  console.log(`   📋 Affected bets: ${gameData.bets.length}`)
+                } else {
+                  console.log(`   ⏳ Game started ${hoursSinceStart} hours ago, may still be in progress`)
+                }
+              } else {
+                console.log(`   ⏳ Game not completed yet or results not available`)
+              }
+              continue
+            }
+            // We have database scores, so continue with those
+          }
         }
         
         // At this point, we should have valid scores (preferably from real-time API)
@@ -599,7 +642,8 @@ export async function settleCompletedBets() {
             
             // Update database based on result
             if (betResult.result === 'push') {
-              // Push - return stakes to both users
+              // PUSH - TIE: Return stakes to BOTH users
+              // No winner, no loser - both get their money back
               // Use a transaction to ensure atomicity
               await prisma.$transaction(async (tx) => {
                 // Update bet status

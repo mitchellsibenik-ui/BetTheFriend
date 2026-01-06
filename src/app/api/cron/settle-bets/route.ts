@@ -1,11 +1,17 @@
 import { NextResponse } from 'next/server'
 import { settleCompletedBets } from '@/lib/betSettlement'
+import { updateGameScores } from '@/lib/gameScoreUpdater'
 
 // This endpoint can be called by external cron services like Vercel Cron or Upstash QStash
 export async function GET() {
   try {
-    console.log('🕐 [CRON] Manual bet settlement triggered')
+    console.log('🕐 [CRON] Bet settlement triggered')
     
+    // First, update game scores to ensure we have the latest data
+    console.log('🔄 [CRON] Updating game scores before settlement...')
+    await updateGameScores()
+    
+    // Then run settlement
     const result = await settleCompletedBets()
     
     return NextResponse.json({ 
