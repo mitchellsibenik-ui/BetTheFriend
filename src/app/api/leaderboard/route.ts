@@ -22,7 +22,7 @@ export async function GET() {
     // Get all resolved bets to calculate head-to-head records
     const resolvedBets = await prisma.bet.findMany({
       where: { 
-        status: 'RESOLVED',
+        status: 'SETTLED',
         resolved: true,
         winnerId: { not: null },
         loserId: { not: null }

@@ -371,7 +371,7 @@ function gradeBet(
  *    b. Falls back to database only if API is unavailable (with warning)
  *    c. Updates Game table with real-time scores for future reference
  * 4. Grades each bet based on bet type (moneyline, spread, over/under) using REAL scores
- * 5. Updates balances, win/loss records, and bet status atomically
+ * 5. Updates balances, win/loss records, and bet status atomically (moves to SETTLED)
  * 6. Sends notifications to both users
  * 
  * Real-Time Results:
@@ -650,7 +650,7 @@ export async function settleCompletedBets() {
                 await tx.bet.update({
                   where: { id: bet.id },
                   data: {
-                    status: 'RESOLVED',
+                    status: 'SETTLED',
                     resolved: true,
                     resolvedAt: new Date(),
                     result: betResult.description
@@ -701,7 +701,7 @@ export async function settleCompletedBets() {
                 await tx.bet.update({
                   where: { id: bet.id },
                   data: {
-                    status: 'RESOLVED',
+                    status: 'SETTLED',
                     resolved: true,
                     resolvedAt: new Date(),
                     winnerId: betResult.winnerId,
@@ -755,7 +755,7 @@ export async function settleCompletedBets() {
             }
             
             betsSettled++
-            console.log(`      ✅ Bet ${bet.id} successfully moved from ACTIVE to RESOLVED`)
+            console.log(`      ✅ Bet ${bet.id} successfully moved from ACTIVE to SETTLED`)
             
           } catch (error) {
             console.error(`   ❌ Error grading bet ${bet.id}:`, error)
